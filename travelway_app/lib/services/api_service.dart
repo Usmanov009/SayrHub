@@ -14,8 +14,8 @@ class ApiService {
   static const String _defaultUrlKey = 'sayrhub_backend_url';
   
   // Default base URL:
-  // Points to live Render backend for mobile app and web
-  static String defaultBaseUrl = 'https://travelway-9x8l.onrender.com';
+  // Points to live Render backend for mobile app and web (admin: /admin)
+  static String defaultBaseUrl = 'https://travel-ai-4uqe.onrender.com';
   String _baseUrl = defaultBaseUrl;
 
   String get baseUrl => _baseUrl;
@@ -27,14 +27,15 @@ class ApiService {
   Future<void> _initUrl() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getString(_defaultUrlKey) ?? prefs.getString('travelway_backend_url');
+      final saved = prefs.getString(_defaultUrlKey) ??
+          prefs.getString('travelway_backend_url');
       if (saved != null && saved.isNotEmpty) {
-        if (!kIsWeb &&
-            (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) &&
-            (saved.contains('localhost') || saved.contains('127.0.0.1'))) {
+        // Migrate old default backend to current admin backend
+        if (saved.contains('travelway-9x8l.onrender.com')) {
           _baseUrl = defaultBaseUrl;
+          await prefs.setString(_defaultUrlKey, _baseUrl);
         } else {
-          _baseUrl = saved;
+          _baseUrl = saved.trim().replaceAll(RegExp(r'/+$'), '');
         }
       }
     } catch (_) {}
@@ -228,16 +229,10 @@ class ApiService {
   }
 
   // 8. Bookings (DB)
-  Future<List<Booking>> getBookings({String? phone, String? travelerId}) async {
+  Future<List<Booking>> getBookings() async {
     try {
-      final qParams = <String, String>{};
-      if (phone != null && phone.trim().isNotEmpty) qParams['phone'] = phone.trim();
-      if (travelerId != null && travelerId.trim().isNotEmpty) qParams['travelerId'] = travelerId.trim();
-
-      final uri = Uri.parse('$_baseUrl/api/db/bookings').replace(
-        queryParameters: qParams.isNotEmpty ? qParams : null,
-      );
-      final res = await http.get(uri).timeout(const Duration(seconds: 15));
+      final uri = Uri.parse('$_baseUrl/api/db/bookings');
+      final res = await http.get(uri).timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
@@ -252,28 +247,20 @@ class ApiService {
   }
 
   Future<bool> createBooking(Booking booking) async {
-    for (int attempt = 1; attempt <= 2; attempt++) {
-      try {
-        final uri = Uri.parse('$_baseUrl/api/db/bookings');
-        final res = await http.post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(booking.toJson()),
-        ).timeout(const Duration(seconds: 35));
+    try {
+      final uri = Uri.parse('$_baseUrl/api/db/bookings');
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(booking.toJson()),
+      ).timeout(const Duration(seconds: 8));
 
-        if (res.statusCode == 200) {
-          final data = jsonDecode(res.body);
-          if (data['success'] == true) {
-            return true;
-          }
-        }
-        debugPrint('createBooking warning (attempt $attempt): status ${res.statusCode}, body: ${res.body}');
-      } catch (e) {
-        debugPrint('Error creating booking (attempt $attempt): $e');
-        if (attempt < 2) {
-          await Future.delayed(const Duration(seconds: 2));
-        }
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        return data['success'] == true;
       }
+    } catch (e) {
+      debugPrint('Error creating booking: $e');
     }
     return false;
   }

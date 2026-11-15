@@ -8,7 +8,6 @@ class Booking {
   final String price;
   final int totalNumeric;
   final String travelerName;
-  final String travelerId;
   final String type; // 'active' | 'completed' | 'cancelled'
   final String startDate;
   final String endDate;
@@ -33,7 +32,6 @@ class Booking {
     required this.price,
     required this.totalNumeric,
     required this.travelerName,
-    this.travelerId = '',
     this.type = 'active',
     this.startDate = '',
     this.endDate = '',
@@ -50,60 +48,126 @@ class Booking {
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+    int asInt(dynamic v, int fallback) =>
+        v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? fallback;
+    String asStr(dynamic v, [String fallback = '']) {
+      final s = v?.toString();
+      if (s == null || s.isEmpty || s == 'null') return fallback;
+      return s;
+    }
+
+    final tourTitle = asStr(
+      json['tourTitle'] ?? json['title'] ?? json['tour_name'] ?? json['tourName'],
+      'Turpaket',
+    );
+    final dest = asStr(
+      json['dest'] ?? json['destination'] ?? json['location'] ?? json['city'],
+    );
+    final travelerName = asStr(
+      json['travelerName'] ??
+          json['travellerName'] ??
+          json['customerName'] ??
+          json['fullName'] ??
+          json['name'],
+      'Mijoz',
+    );
+    final voucherId = asStr(
+      json['voucherId'] ?? json['voucher'] ?? json['voucherCode'],
+      'VCH-${DateTime.now().millisecondsSinceEpoch % 100000}',
+    );
+    final hotelImg = asStr(
+      json['hotelImg'] ?? json['hotelImage'] ?? json['image'] ?? json['img'],
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
+    );
+    final phone = asStr(json['phone'] ?? json['phoneNumber'] ?? json['tel']);
+    final passport = asStr(
+      json['passport'] ?? json['passportNumber'] ?? json['passport_id'],
+    );
+    final adults = asInt(json['adultsCount'] ?? json['adults'], 2);
+    final children = asInt(json['childrenCount'] ?? json['children'], 0);
+    final guests = asInt(
+      json['guestsCount'] ?? json['guests'] ?? json['travelersCount'],
+      adults + children,
+    );
+
     return Booking(
-      id: json['id']?.toString() ?? '',
-      tourTitle: json['tourTitle']?.toString() ?? 'Turpaket',
-      dest: json['dest']?.toString() ?? '',
-      dates: json['dates']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'Tasdiqlangan',
-      voucherId: json['voucherId']?.toString() ?? 'VCH-${DateTime.now().millisecondsSinceEpoch % 100000}',
-      price: json['price']?.toString() ?? '\$0',
-      totalNumeric: (json['totalNumeric'] is num) ? (json['totalNumeric'] as num).toInt() : 0,
-      travelerName: json['travelerName']?.toString() ?? 'Mijoz',
-      travelerId: json['travelerId']?.toString() ?? '',
-      type: json['type']?.toString() ?? 'active',
-      startDate: json['startDate']?.toString() ?? '',
-      endDate: json['endDate']?.toString() ?? '',
-      hotelImg: json['hotelImg']?.toString() ?? 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
-      flight: json['flight']?.toString() ?? 'Uzbekistan Airways',
-      airline: json['airline']?.toString() ?? 'Uzbekistan Airways',
-      nightsCount: (json['nightsCount'] is num) ? (json['nightsCount'] as num).toInt() : 7,
-      passport: json['travelerPassport']?.toString() ?? json['passport']?.toString() ?? '',
-      phone: json['travelerPhone']?.toString() ?? json['phone']?.toString() ?? '',
-      guestsCount: (json['guestsCount'] is num) ? (json['guestsCount'] as num).toInt() : 2,
-      adultsCount: (json['adultsCount'] is num) ? (json['adultsCount'] as num).toInt() : 2,
-      childrenCount: (json['childrenCount'] is num) ? (json['childrenCount'] as num).toInt() : 0,
-      cancellationReason: json['cancellationReason']?.toString() ?? '',
+      id: asStr(json['id'] ?? json['_id'] ?? json['bookingId']),
+      tourTitle: tourTitle,
+      dest: dest,
+      dates: asStr(json['dates'] ?? json['date'] ?? json['travelDates']),
+      status: asStr(json['status'], 'Tasdiqlangan'),
+      voucherId: voucherId,
+      price: asStr(json['price'] ?? json['amountText'], '\$0'),
+      totalNumeric: asInt(
+        json['totalNumeric'] ?? json['totalPrice'] ?? json['amount'] ?? json['priceNumeric'],
+        0,
+      ),
+      travelerName: travelerName,
+      type: asStr(json['type'], 'active'),
+      startDate: asStr(json['startDate'] ?? json['checkIn'] ?? json['checkin']),
+      endDate: asStr(json['endDate'] ?? json['checkOut'] ?? json['checkout']),
+      hotelImg: hotelImg,
+      flight: asStr(json['flight'] ?? json['flightInfo'], 'Charter parvoz'),
+      airline: asStr(json['airline'], 'Uzbekistan Airways'),
+      nightsCount: asInt(json['nightsCount'] ?? json['nights'], 7),
+      passport: passport,
+      phone: phone,
+      guestsCount: guests,
+      adultsCount: adults,
+      childrenCount: children,
+      cancellationReason: asStr(
+        json['cancellationReason'] ?? json['cancelReason'] ?? json['reason'],
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      '_id': id,
+      'bookingId': id,
       'tourTitle': tourTitle,
+      'title': tourTitle,
+      'tourName': tourTitle,
       'dest': dest,
+      'destination': dest,
+      'location': dest,
       'dates': dates,
+      'travelDates': dates,
       'status': status,
       'voucherId': voucherId,
+      'voucher': voucherId,
       'price': price,
+      'amountText': price,
       'totalNumeric': totalNumeric,
+      'totalPrice': totalNumeric,
+      'amount': totalNumeric,
       'travelerName': travelerName,
-      'travelerId': travelerId,
+      'travellerName': travelerName,
+      'customerName': travelerName,
+      'name': travelerName,
       'type': type,
       'startDate': startDate,
       'endDate': endDate,
       'hotelImg': hotelImg,
+      'hotelImage': hotelImg,
+      'image': hotelImg,
       'flight': flight,
       'airline': airline,
       'nightsCount': nightsCount,
+      'nights': nightsCount,
       'passport': passport,
+      'passportNumber': passport,
       'phone': phone,
-      'travelerPassport': passport,
-      'travelerPhone': phone,
+      'phoneNumber': phone,
       'guestsCount': guestsCount,
+      'guests': guestsCount,
       'adultsCount': adultsCount,
+      'adults': adultsCount,
       'childrenCount': childrenCount,
+      'children': childrenCount,
       'cancellationReason': cancellationReason,
+      'cancelReason': cancellationReason,
     };
   }
 }
