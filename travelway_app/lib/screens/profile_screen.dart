@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/payment_card.dart';
+import '../services/api_service.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/flaticon_icons.dart';
@@ -64,6 +65,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _savedCardsCount = cardsCount;
         _isLoading = false;
       });
+
+      // Background sync with MongoDB user profile
+      ApiService().getUserProfile(tcId: tcId, phone: phone).then((dbUser) {
+        if (dbUser != null && mounted) {
+          final dbName = dbUser['name']?.toString();
+          final dbPhone = dbUser['phone']?.toString();
+          final dbPassport = dbUser['passportNumber']?.toString();
+          final dbTcId = dbUser['tcId']?.toString();
+
+          setState(() {
+            if (dbName != null && dbName.isNotEmpty) _userName = dbName;
+            if (dbPhone != null && dbPhone.isNotEmpty) _userPhone = dbPhone;
+            if (dbPassport != null && dbPassport.isNotEmpty) _userPassport = dbPassport;
+            if (dbTcId != null && dbTcId.isNotEmpty) _userId = dbTcId;
+          });
+
+          prefs.setString('sayrhub_user_name', _userName);
+          prefs.setString('sayrhub_user_phone', _userPhone);
+          prefs.setString('sayrhub_user_passport', _userPassport);
+          prefs.setString('sayrhub_user_id', _userId);
+        }
+      }).catchError((_) {});
     } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -100,6 +123,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _userPhone = phone;
           _userId = tcId;
         });
+
+        // Sync with MongoDB & reload bookings for this user
+        ApiService().syncUserProfile(
+          tcId: tcId,
+          name: name,
+          phone: phone,
+          passport: _userPassport,
+        );
+        Provider.of<AppProvider>(context, listen: false).loadBookings();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -725,6 +758,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle: '@$botUsername',
                 onTap: _openTelegramSupport,
               ),
+              const Divider(height: 1, indent: 56),
+
+              Consumer<AppProvider>(
+                builder: (context, prov, _) => _buildSettingItem(
+                  icon: FlaticonIcons.public,
+                  title: 'Server & MongoDB Ulanishi',
+                  subtitle: prov.apiService.baseUrl,
+                  onTap: () => _showBackendUrlDialog(context),
+                ),
+              ),
             ],
           ),
         ),
@@ -891,6 +934,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('sayrhub_user_name', name);
       await prefs.setString('sayrhub_user_phone', phone);
+      final tcId = prefs.getString('sayrhub_user_id') ?? _userId;
+
+      // Sync customer profile to MongoDB
+      ApiService().syncUserProfile(
+        tcId: tcId,
+        name: name,
+        phone: phone,
+        passport: _userPassport,
+      );
+
       if (!mounted) return;
       setState(() {
         _userName = name;
@@ -997,6 +1050,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final cleaned = passport.replaceAll(' ', '').toUpperCase();
       final formatted = '${cleaned.substring(0, 2)} ${cleaned.substring(2)}';
       await prefs.setString('sayrhub_user_passport', formatted);
+      final tcId = prefs.getString('sayrhub_user_id') ?? _userId;
+
+      // Sync customer profile to MongoDB
+      ApiService().syncUserProfile(
+        tcId: tcId,
+        name: _userName,
+        phone: _userPhone,
+        passport: formatted,
+      );
+
       if (!mounted) return;
       setState(() => _userPassport = formatted);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1062,6 +1125,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fontWeight: FontWeight.bold,
           color: AppTheme.textMuted,
           letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  void _showBackendUrlDialog(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    final controller = TextEditingController(text: provider.apiService.baseUrl);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.surfaceDark,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(FlaticonIcons.public, color: AppTheme.primary, size: 22),
+              const SizedBox(width: 10),
+              const Text(
+                'Server & Baza Manzili',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Mobil ilova bronlar va ma\'lumotlarni saqlaydigan backend manzili:',
+                style: TextStyle(fontSize: 12, color: AppTheme.textSub),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                style: const TextStyle(fontSize: 13, color: AppTheme.textMain),
+                decoration: InputDecoration(
+                  labelText: 'Backend URL',
+                  labelStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                  filled: true,
+                  fillColor: AppTheme.bgDark,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Tezkor tanlash:',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  ActionChip(
+                    label: const Text('Kompyuter (Lokal)', style: TextStyle(fontSize: 11, color: AppTheme.textMain)),
+                    backgroundColor: AppTheme.subtleDark,
+                    onPressed: () {
+                      setDialogState(() {
+                        controller.text = 'http://192.168.1.67:3000';
+                      });
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Render (Bulut)', style: TextStyle(fontSize: 11, color: AppTheme.textMain)),
+                    backgroundColor: AppTheme.subtleDark,
+                    onPressed: () {
+                      setDialogState(() {
+                        controller.text = 'https://travel-ai-4uqe.onrender.com';
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Bekor qilish'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newUrl = controller.text.trim();
+                if (newUrl.isNotEmpty) {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final nav = Navigator.of(ctx);
+                  await provider.updateBackendUrl(newUrl);
+                  if (mounted) setState(() {});
+                  nav.pop();
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Server manzili saqlandi: $newUrl'),
+                      backgroundColor: AppTheme.accentGreen,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
+              child: const Text('Saqlash'),
+            ),
+          ],
         ),
       ),
     );

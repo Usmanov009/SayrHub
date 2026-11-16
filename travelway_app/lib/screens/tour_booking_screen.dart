@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/tour_package.dart';
 import '../models/booking.dart';
 import '../models/payment_card.dart';
+import '../services/api_service.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/flaticon_icons.dart';
@@ -29,7 +30,7 @@ class TourBookingScreen extends StatefulWidget {
 
 class _TourBookingScreenState extends State<TourBookingScreen> {
   static final RegExp _nameCharRegExp =
-      RegExp(r"[a-zA-Z\u00C0-\u024F\u2019'`?'\- ]");
+      RegExp(r"[a-zA-Z\u0400-\u04FF\u00C0-\u024F\u2019'`?'\- ]");
 
   static String _normalizePassport(String input) {
     final cleaned = input.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
@@ -201,7 +202,7 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
       );
       return;
     }
-    if (!RegExp(r"^[a-zA-Z\u00C0-\u024F\u2019'`?'\- ]+$").hasMatch(name)) {
+    if (!RegExp(r"^[a-zA-Z\u0400-\u04FF\u00C0-\u024F\u2019'`?'\- ]+$").hasMatch(name)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Ism va familiyada faqat harflar bo\'lishi kerak'),
@@ -247,8 +248,27 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
         ? '\$$_totalPrice ($_totalGuests kishi: $_adultsCount katta, $_childrenCount bola)'
         : '\$$_totalPrice ($_totalGuests kishi: $_adultsCount katta)';
 
+    String currentUserId = 'TC-${DateTime.now().millisecondsSinceEpoch % 1000000}';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      currentUserId = prefs.getString('sayrhub_user_id') ?? currentUserId;
+      await prefs.setString('sayrhub_user_id', currentUserId);
+      await prefs.setString('sayrhub_user_name', name);
+      await prefs.setString('sayrhub_user_phone', phone);
+      await prefs.setString('sayrhub_user_passport', passport);
+
+      // Sync customer profile to MongoDB in background
+      ApiService().syncUserProfile(
+        tcId: currentUserId,
+        name: name,
+        phone: phone,
+        passport: passport,
+      );
+    } catch (_) {}
+
     final newBooking = Booking(
       id: bookingId,
+      travelerId: currentUserId,
       tourTitle: widget.tour.title,
       dest: widget.tour.location,
       dates: widget.tour.departureDate.isNotEmpty
@@ -271,21 +291,22 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
       childrenCount: _childrenCount,
     );
 
-    // Save traveler profile updates to SharedPreferences
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('sayrhub_user_name', name);
-      await prefs.setString('sayrhub_user_phone', phone);
-      await prefs.setString('sayrhub_user_passport', passport);
-    } catch (_) {}
-
-    await provider.createBooking(newBooking);
+    final bookedToServer = await provider.createBooking(newBooking);
 
     // Add to favorites and cart for persistence across app restarts
     await provider.toggleFavorite(widget.tour.id);
     await provider.addToCart(widget.tour.id, quantity: _totalGuests);
 
     if (mounted) {
+      if (!bookedToServer) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Serverga ulanishda muammo bo\'ldi. Buyurtma qurilmada saqlandi.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
       setState(() {
         _isSubmitting = false;
         _completedBooking = newBooking;

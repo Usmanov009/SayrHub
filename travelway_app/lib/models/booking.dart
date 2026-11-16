@@ -21,6 +21,7 @@ class Booking {
   final int adultsCount;
   final int childrenCount;
   final String cancellationReason;
+  final String travelerId;
 
   Booking({
     required this.id,
@@ -45,6 +46,7 @@ class Booking {
     this.adultsCount = 2,
     this.childrenCount = 0,
     this.cancellationReason = '',
+    this.travelerId = 'guest',
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -118,14 +120,19 @@ class Booking {
       cancellationReason: asStr(
         json['cancellationReason'] ?? json['cancelReason'] ?? json['reason'],
       ),
+      travelerId: asStr(
+        json['travelerId'] ?? json['userId'],
+        'guest',
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      '_id': id,
       'bookingId': id,
+      'travelerId': travelerId,
+      'userId': travelerId,
       'tourTitle': tourTitle,
       'title': tourTitle,
       'tourName': tourTitle,

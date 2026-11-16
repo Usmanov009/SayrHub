@@ -164,8 +164,13 @@ router.get('/bookings', optionalAuth, requireDatabase, async (req: AuthRequest, 
     } else if (req.query.voucherId || req.query.phone || req.query.travelerId) {
       // Unauthenticated client (mobile app or guest verifying their reservation)
       if (req.query.voucherId) query.voucherId = String(req.query.voucherId);
-      if (req.query.travelerId) query.travelerId = String(req.query.travelerId);
-      if (req.query.phone) {
+      if (req.query.travelerId && req.query.phone) {
+        const ph = String(req.query.phone);
+        const tid = String(req.query.travelerId);
+        query.$or = [{ travelerId: tid }, { travelerPhone: ph }, { phone: ph }];
+      } else if (req.query.travelerId) {
+        query.travelerId = String(req.query.travelerId);
+      } else if (req.query.phone) {
         const ph = String(req.query.phone);
         query.$or = [{ travelerPhone: ph }, { phone: ph }];
       }
@@ -202,8 +207,11 @@ router.post('/bookings', optionalAuth, requireDatabase, async (req: AuthRequest,
     const travelerPhone = String(booking.travelerPhone || booking.phone || '').trim();
     const travelerPassport = String(booking.travelerPassport || booking.passport || '').trim();
 
+    // Strip client-sent _id and __v to prevent Mongoose CastError on ObjectId
+    const { _id: _ignoredId, __v: _ignoredVersion, ...cleanBooking } = booking;
+
     const bookingPayload = {
-      ...booking,
+      ...cleanBooking,
       travelerId,
       travelerPhone,
       travelerPassport,
@@ -217,6 +225,35 @@ router.post('/bookings', optionalAuth, requireDatabase, async (req: AuthRequest,
       { $set: bookingPayload },
       { upsert: true, returnDocument: 'after', new: true, runValidators: true, setDefaultsOnInsert: true },
     ).lean();
+
+    // Automatically sync / upsert customer profile into MongoDB UserModel
+    if (travelerPhone || (travelerId && travelerId !== 'guest')) {
+      try {
+        const userQuery: any = travelerId && travelerId !== 'guest'
+          ? { tcId: travelerId }
+          : { phone: travelerPhone };
+
+        await UserModel.findOneAndUpdate(
+          userQuery,
+          {
+            $set: {
+              ...(booking.travelerName ? { name: String(booking.travelerName).trim() } : {}),
+              ...(travelerPhone ? { phone: travelerPhone } : {}),
+              ...(travelerPassport ? { passportNumber: travelerPassport } : {}),
+              status: 'active',
+            },
+            $setOnInsert: {
+              tcId: travelerId && travelerId !== 'guest' ? travelerId : `tw-${Date.now()}`,
+              cashbackBalance: 0,
+              isVerified: false,
+            }
+          },
+          { upsert: true }
+        );
+      } catch (e: any) {
+        console.warn('Booking user profile auto-sync warning:', e?.message || e);
+      }
+    }
 
     // Asynchronously notify traveler & admin via Telegram
     import('../../../telegramBot.js')
@@ -389,6 +426,104 @@ router.post('/users', authenticateToken, requireDatabase, requireActiveUser, asy
       { $set: profile, $setOnInsert: { status: 'active', cashbackBalance: 0, isVerified: false } },
       { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true },
     ).lean();
+    return res.json({ success: true, user: savedUser });
+  } catch (error) {
+    return sendDatabaseError(res, error);
+  }
+});
+
+router.get('/users/profile', optionalAuth, requireDatabase, async (req: AuthRequest, res) => {
+  try {
+    const tcId = String(req.query.tcId || req.user?.id || '').trim();
+    const phone = String(req.query.phone || '').trim();
+
+    if (!tcId && !phone) {
+      return res.status(400).json({ success: false, error: 'tcId yoki phone talab qilinadi.' });
+    }
+
+    const query: any = {};
+    if (tcId && phone) {
+      query.$or = [{ tcId }, { phone }];
+    } else if (tcId) {
+      query.tcId = tcId;
+    } else {
+      query.phone = phone;
+    }
+
+    const user = await UserModel.findOne(query).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'Foydalanuvchi profili topilmadi.' });
+    }
+
+    // Count bookings made by this user in MongoDB
+    const bookingsCount = await BookingModel.countDocuments({
+      $or: [{ travelerId: user.tcId }, { travelerPhone: user.phone }, { phone: user.phone }]
+    });
+
+    return res.json({
+      success: true,
+      user: {
+        ...user,
+        bookingsCount,
+      }
+    });
+  } catch (error) {
+    return sendDatabaseError(res, error);
+  }
+});
+
+router.post('/users/mobile-sync', optionalAuth, requireDatabase, async (req: AuthRequest, res) => {
+  try {
+    const body = req.body || {};
+    const tcId = String(body.tcId || body.id || req.user?.id || '').trim();
+    const phone = String(body.phone || '').trim();
+    const name = String(body.name || '').trim();
+    const passportNumber = String(body.passportNumber || body.passport || '').trim();
+    const email = String(body.email || '').trim();
+
+    if (!tcId && !phone) {
+      return res.status(400).json({ success: false, error: 'Foydalanuvchi identifikatori (tcId yoki phone) kiritilishi shart.' });
+    }
+
+    const assignedTcId = tcId || `tw-${Date.now()}`;
+    const userQuery: any = tcId && phone
+      ? { $or: [{ tcId }, { phone }] }
+      : (tcId ? { tcId } : { phone });
+
+    const updateSet: any = {
+      tcId: assignedTcId,
+      status: 'active',
+    };
+    if (name) updateSet.name = name;
+    if (phone) updateSet.phone = phone;
+    if (passportNumber) updateSet.passportNumber = passportNumber;
+    if (email) updateSet.email = email;
+    if (body.telegramId) updateSet.telegramId = String(body.telegramId);
+    if (body.telegramUsername) updateSet.telegramUsername = String(body.telegramUsername);
+
+    const savedUser = await UserModel.findOneAndUpdate(
+      userQuery,
+      {
+        $set: updateSet,
+        $setOnInsert: {
+          cashbackBalance: 0,
+          isVerified: false,
+        }
+      },
+      { upsert: true, returnDocument: 'after', new: true }
+    ).lean();
+
+    // Link any previous guest bookings made with this phone number to the user's tcId in MongoDB
+    if (phone && assignedTcId) {
+      await BookingModel.updateMany(
+        {
+          $or: [{ phone }, { travelerPhone: phone }],
+          travelerId: 'guest'
+        },
+        { $set: { travelerId: assignedTcId } }
+      );
+    }
+
     return res.json({ success: true, user: savedUser });
   } catch (error) {
     return sendDatabaseError(res, error);

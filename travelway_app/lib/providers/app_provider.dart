@@ -273,11 +273,19 @@ class AppProvider extends ChangeNotifier {
     await _loadLocalBookings();
 
     try {
-      final apiBookings = await apiService.getBookings();
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('sayrhub_user_id') ?? '';
+      final userPhone = prefs.getString('sayrhub_user_phone') ?? '';
+
+      final apiBookings = await apiService.getBookings(
+        travelerId: userId.isNotEmpty ? userId : null,
+        phone: userPhone.isNotEmpty ? userPhone : null,
+      );
       // Merge: keep local bookings that aren't in API (offline created)
       final apiIds = apiBookings.map((b) => b.id).toSet();
       final localOnly = _bookings.where((b) => !apiIds.contains(b.id)).toList();
       _bookings = [...apiBookings, ...localOnly];
+      await _saveLocalBookings();
     } catch (_) {
       // Keep local bookings if API fails
     }

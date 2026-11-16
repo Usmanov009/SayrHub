@@ -229,12 +229,22 @@ class ApiService {
   }
 
   // 8. Bookings (DB)
-  Future<List<Booking>> getBookings() async {
+  Future<List<Booking>> getBookings({String? travelerId, String? phone}) async {
     try {
-      final uri = Uri.parse('$_baseUrl/api/db/bookings');
+      final qParams = <String, String>{};
+      if (travelerId != null && travelerId.isNotEmpty) {
+        qParams['travelerId'] = travelerId;
+      }
+      if (phone != null && phone.isNotEmpty) {
+        qParams['phone'] = phone;
+      }
+
+      final uri = Uri.parse('$_baseUrl/api/db/bookings').replace(
+        queryParameters: qParams.isNotEmpty ? qParams : null,
+      );
       final res = await http.get(uri).timeout(const Duration(seconds: 6));
 
-      if (res.statusCode == 200) {
+      if (res.statusCode == 200 && (res.headers['content-type']?.contains('json') ?? false)) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
         if (data['success'] == true && data['bookings'] is List) {
           return (data['bookings'] as List).map((b) => Booking.fromJson(b)).toList();
@@ -253,12 +263,13 @@ class ApiService {
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(booking.toJson()),
-      ).timeout(const Duration(seconds: 8));
+      ).timeout(const Duration(seconds: 15));
 
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
+      if (res.statusCode == 200 && (res.headers['content-type']?.contains('json') ?? false)) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
         return data['success'] == true;
       }
+      debugPrint('createBooking non-200: ${res.statusCode} ${res.body}');
     } catch (e) {
       debugPrint('Error creating booking: $e');
     }
@@ -423,5 +434,64 @@ class ApiService {
     } catch (_) {
       return [];
     }
+  }
+
+  // 10. User Profile (MongoDB)
+  Future<Map<String, dynamic>?> syncUserProfile({
+    required String tcId,
+    required String name,
+    required String phone,
+    String? passport,
+    String? email,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/db/users/mobile-sync');
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'tcId': tcId,
+          'name': name,
+          'phone': phone,
+          'passportNumber': passport ?? '',
+          'email': email ?? '',
+        }),
+      ).timeout(const Duration(seconds: 6));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
+        if (data['success'] == true && data['user'] is Map) {
+          return Map<String, dynamic>.from(data['user']);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing user profile to DB: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> getUserProfile({String? tcId, String? phone}) async {
+    try {
+      final qParams = <String, String>{};
+      if (tcId != null && tcId.isNotEmpty) qParams['tcId'] = tcId;
+      if (phone != null && phone.isNotEmpty) qParams['phone'] = phone;
+
+      if (qParams.isEmpty) return null;
+
+      final uri = Uri.parse('$_baseUrl/api/db/users/profile').replace(
+        queryParameters: qParams,
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 6));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
+        if (data['success'] == true && data['user'] is Map) {
+          return Map<String, dynamic>.from(data['user']);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching user profile from DB: $e');
+    }
+    return null;
   }
 }

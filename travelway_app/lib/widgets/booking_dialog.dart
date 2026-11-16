@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/api_service.dart';
 import '../models/tour_package.dart';
 import '../models/booking.dart';
 import '../providers/app_provider.dart';
@@ -87,8 +88,30 @@ class _BookingDialogState extends State<BookingDialog> {
         ? '\$$_totalPrice ($_totalGuests kishi: $_adultsCount katta, $_childrenCount bola)'
         : '\$$_totalPrice ($_totalGuests kishi: $_adultsCount katta)';
 
+    String currentUserId = 'TC-${DateTime.now().millisecondsSinceEpoch % 1000000}';
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final passport = _passportController.text.trim();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      currentUserId = prefs.getString('sayrhub_user_id') ?? currentUserId;
+      await prefs.setString('sayrhub_user_id', currentUserId);
+      await prefs.setString('sayrhub_user_name', name);
+      await prefs.setString('sayrhub_user_phone', phone);
+      await prefs.setString('sayrhub_user_passport', passport);
+
+      // Sync customer profile to MongoDB in background
+      ApiService().syncUserProfile(
+        tcId: currentUserId,
+        name: name,
+        phone: phone,
+        passport: passport,
+      );
+    } catch (_) {}
+
     final newBooking = Booking(
       id: bookingId,
+      travelerId: currentUserId,
       tourTitle: widget.tour.title,
       dest: widget.tour.location,
       dates: widget.tour.departureDate.isNotEmpty
@@ -98,14 +121,14 @@ class _BookingDialogState extends State<BookingDialog> {
       voucherId: voucherCode,
       price: priceStr,
       totalNumeric: _totalPrice,
-      travelerName: _nameController.text.trim(),
+      travelerName: name,
       type: 'active',
       hotelImg: widget.tour.img,
       flight: widget.tour.flight,
       airline: widget.tour.airline,
       nightsCount: widget.tour.nightsCount,
-      passport: _passportController.text.trim(),
-      phone: _phoneController.text.trim(),
+      passport: passport,
+      phone: phone,
       guestsCount: _totalGuests,
       adultsCount: _adultsCount,
       childrenCount: _childrenCount,

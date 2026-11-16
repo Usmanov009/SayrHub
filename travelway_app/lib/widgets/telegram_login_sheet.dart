@@ -267,6 +267,13 @@ class _TelegramLoginSheetState extends State<TelegramLoginSheet>
       await prefs.setString('sayrhub_user_name', name);
       await prefs.setString('sayrhub_user_phone', phone);
       await prefs.setString('sayrhub_user_id', tcId);
+
+      // Sync customer profile to MongoDB
+      ApiService().syncUserProfile(
+        tcId: tcId,
+        name: name,
+        phone: phone,
+      );
     } catch (_) {}
 
     if (mounted) {
