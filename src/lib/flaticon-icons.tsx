@@ -351,3 +351,7 @@ export const TrendingUpIcon = createIcon('TrendingUpIcon');
 export const UsersIcon = createIcon('UsersIcon');
 export const UsersRoundIcon = createIcon('UsersRoundIcon');
 
+export const Database = DatabaseIcon;
+export const Activity = Zap;
+export const Server = DatabaseIcon;
+

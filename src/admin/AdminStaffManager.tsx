@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { AdminRole, AdminUser } from './adminTypes';
-import { Briefcase, Crown, Shield } from '@/lib/flaticon-icons';
+import { Briefcase, Crown, Shield, ShieldCheck } from '@/lib/flaticon-icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface AdminStaffManagerProps {
   currentRole: AdminRole;
@@ -12,6 +16,8 @@ interface AdminStaffManagerProps {
   onShowToast: (text: string, type?: 'success' | 'error' | 'info') => void;
   globalSearch?: string;
 }
+
+const POPULAR_DESTINATIONS = ['Turkiya', 'BAA', 'Misr', 'Tailand', 'Gruziya', 'Maldiv', 'Vetnam', 'Xitoy'];
 
 export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
   currentRole,
@@ -32,19 +38,20 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
   const [showModalPassword, setShowModalPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('+998 90 ');
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(['Turkiya']);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   if (!isMainAdmin) {
     return (
-      <div className="p-12 text-center bg-card rounded-2xl border border-zinc-200/90 dark:border-zinc-800 space-y-4 max-w-xl mx-auto my-8 shadow-2xs">
+      <div className="p-12 text-center bg-card rounded-2xl border border-border space-y-4 max-w-xl mx-auto my-8 shadow-2xs">
         <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center text-3xl border border-amber-200/70 dark:border-amber-800/50">
           <Shield aria-hidden="true" className="h-8 w-8" />
         </div>
-        <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Tur Adminlar Boshqaruvi Cheklangan</h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Xodimlar va tur adminlar tayinlash faqat
-          <b> <Crown aria-hidden="true" className="inline h-3.5 w-3.5" /> Bosh Admin (Super Admin)</b> vakolatiga kiradi.
+        <h3 className="text-xl font-bold text-foreground">Tur Adminlar Boshqaruvi Cheklangan</h3>
+        <p className="text-sm text-muted-foreground">
+          Yangi tur adminlarini ochish va o‘chirish faqat
+          <b> <Crown aria-hidden="true" className="inline h-3.5 w-3.5" /> Bosh Admin (Yagona Super Admin)</b> vakolatiga kiradi.
         </p>
       </div>
     );
@@ -65,6 +72,7 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
     generateRandomPassword();
     setEmail('');
     setPhone('+998 90 ');
+    setSelectedDestinations(['Turkiya']);
     setIsModalOpen(true);
   };
 
@@ -76,9 +84,17 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
     }
   };
 
+  const toggleDestination = (dest: string) => {
+    if (selectedDestinations.includes(dest)) {
+      setSelectedDestinations(selectedDestinations.filter(d => d !== dest));
+    } else {
+      setSelectedDestinations([...selectedDestinations, dest]);
+    }
+  };
+
   const copyCredentials = (staff: AdminUser) => {
     const loginVal = staff.username || staff.email.split('@')[0];
-    const textToCopy = `SayrHub Boshqaruv Paneli\nHavola: https://sayrhub.uz/admin\nLogin: ${loginVal}\nRol: ${staff.roleTitle || 'Tur Admin'}`;
+    const textToCopy = `SayrHub Tur Admin Paneli\nHavola: https://sayrhub.uz/admin\nLogin: ${loginVal}\nRol: Tur Admin (3% komissiya)\nYo'nalishlar: ${(staff.assignedDestinations || []).join(', ') || 'Barchasi'}`;
 
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       void navigator.clipboard.writeText(textToCopy).then(() => {
@@ -98,7 +114,7 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
     const cleanPass = password.trim();
 
     if (!cleanName || !cleanUser || !cleanPass) {
-      onShowToast("Xodim ismi, login va parolini to'liq kiriting!", 'error');
+      onShowToast("Tur admin ismi, login va parolini to'liq kiriting!", 'error');
       return;
     }
 
@@ -114,10 +130,10 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
       password: cleanPass,
       email: email.trim(),
       phone: phone.trim(),
-      role: 'tour_admin',
+      role: 'tour_admin', // Har doim tur_admin bo'ladi, Bosh admin faqat bitta
       roleTitle: 'Tur Admin',
       avatar: '',
-      assignedDestinations: [],
+      assignedDestinations: selectedDestinations,
       canManageUsers: false,
       canManageStaff: false,
       canDeleteTours: true,
@@ -131,10 +147,26 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
 
     try {
       await onAddStaff(newStaff);
-      onShowToast(`Yangi tur admin "${cleanName}" bazaga saqlandi. Login: "${cleanUser}".`, 'success');
+      onShowToast(`Yangi tur admin "${cleanName}" muvaffaqiyatli ochildi! Login: "${cleanUser}".`, 'success');
       setIsModalOpen(false);
     } catch (error) {
       onShowToast(error instanceof Error ? error.message : 'Admin xodimini saqlab bo‘lmadi.', 'error');
+    }
+  };
+
+  const handleDeleteStaff = async (staff: AdminUser) => {
+    if (staff.role === 'main_admin' || staff.id === 'adm-root') {
+      onShowToast("Bosh adminni o'chirib bo'lmaydi! Tizimda faqat bitta bosh admin bo'lishi shart.", 'error');
+      return;
+    }
+
+    if (confirm(`Rostdan ham "${staff.name}" (${staff.username}) tur adminini o'chirmoqchimisiz?\nUning kirish huquqi bekor qilinadi.`)) {
+      try {
+        await onRemoveStaff(staff.id);
+        onShowToast(`"${staff.name}" tur admini tizimdan o'chirildi`, 'success');
+      } catch (error) {
+        onShowToast(error instanceof Error ? error.message : "Tur adminni o'chirib bo'lmadi.", 'error');
+      }
     }
   };
 
@@ -149,43 +181,60 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. Header */}
+      {/* 1. Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <Shield aria-hidden="true" className="h-4 w-4" /> Tur Adminlar & Xodimlar Jamoasi ({staffList.length})
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <ShieldCheck aria-hidden="true" className="h-5 w-5 text-indigo-600" />
+            Tur Adminlar Boshqaruvi ({staffList.length})
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            SayrHub tizimidagi Tur Adminlar, ularning kirish login va parollari hamda mas'ul yo'nalishlari
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Tizimdagi Tur Adminlarni boshqarish, yangi tur admin ochish va o‘chirish bo‘limi
           </p>
         </div>
 
-        <button
+        <Button
           onClick={openNewStaffModal}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-2xs transition-all tap-bounce shrink-0"
+          className="h-10 gap-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all shrink-0"
         >
           <span className="material-symbols-outlined text-[18px]">person_add</span>
-          <span>Yangi Tur Admin Tayinlash</span>
-        </button>
+          <span>Yangi Tur Admin Ochish</span>
+        </Button>
       </div>
 
-      {/* 2. Search */}
-      <div className="p-4 rounded-2xl bg-card border border-zinc-200/90 dark:border-zinc-800 shadow-2xs">
+      {/* 2. Super Admin & 3% Rule Alert Banner */}
+      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-start md:items-center gap-2.5">
+          <Crown className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5 md:mt-0" />
+          <div className="space-y-0.5">
+            <span className="font-bold">Yagona Bosh Admin qoidasi:</span>
+            <p className="text-muted-foreground dark:text-amber-300/80">
+              Tizimda faqat bitta Bosh Admin bo‘ladi. Tur Adminlar o‘z daromadining 3% qismini Bosh Adminga to‘laydi va mijozlar shaxsiy ro‘yxatiga (users) kirish huquqiga ega bo‘lmaydi.
+            </p>
+          </div>
+        </div>
+        <Badge variant="outline" className="shrink-0 bg-amber-100/60 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
+          3% Komissiya Tizimi
+        </Badge>
+      </div>
+
+      {/* 3. Search */}
+      <div className="p-4 rounded-2xl bg-card border border-border shadow-2xs">
         <div className="relative max-w-md">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-[18px]">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[18px]">
             search
           </span>
-          <input
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Xodim ismi, login yoki telefon..."
-            className="w-full bg-zinc-100/90 dark:bg-zinc-800/80 text-zinc-900 dark:text-white placeholder-slate-400 pl-9 pr-7 py-2 rounded-xl text-xs border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none transition-all"
+            placeholder="Tur admin ismi, login yoki telefon..."
+            className="pl-9 h-9 text-xs"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 text-xs"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
             >
               ✕
             </button>
@@ -193,16 +242,20 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
         </div>
       </div>
 
-      {/* 3. Staff Cards Grid */}
+      {/* 4. Staff Cards Grid */}
       {filteredStaff.length === 0 ? (
-        <div className="p-12 text-center bg-card rounded-2xl border border-zinc-200/90 dark:border-zinc-800 space-y-4 max-w-lg mx-auto my-6 shadow-2xs">
+        <div className="p-12 text-center bg-card rounded-2xl border border-border space-y-4 max-w-lg mx-auto my-6 shadow-2xs">
           <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center text-3xl">
             <Briefcase aria-hidden="true" className="h-8 w-8" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Adminlar Topilmadi</h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            Qidiruv so'rovi bo'yicha tur admin topilmadi.
+          <h3 className="text-lg font-bold text-foreground">Tur Adminlar Topilmadi</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Qidiruv so‘rovi bo‘yicha tur admin topilmadi yoki hali yangi tur admin ochilmagan.
           </p>
+          <Button onClick={openNewStaffModal} variant="outline" size="sm" className="gap-2">
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            <span>Yangi Tur Admin Ochish</span>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -211,9 +264,9 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
             const displayUser = staff.username || staff.email.split('@')[0];
 
             return (
-              <div
+              <Card
                 key={staff.id}
-                className="p-5 rounded-2xl bg-card border border-zinc-200/90 dark:border-zinc-800 space-y-4 shadow-2xs relative overflow-hidden"
+                className="p-5 rounded-2xl bg-card border-border space-y-4 shadow-2xs relative overflow-hidden transition-all hover:shadow-xs"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -221,16 +274,18 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
                       <img
                         src={staff.avatar}
                         alt=""
-                        className="w-12 h-12 rounded-2xl object-cover border border-zinc-200 dark:border-zinc-700"
+                        className="w-12 h-12 rounded-2xl object-cover border border-border"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-2xl bg-muted text-muted-foreground flex items-center justify-center font-bold border border-border">
+                      <div className="w-12 h-12 rounded-2xl bg-muted text-muted-foreground flex items-center justify-center font-bold border border-border text-sm">
                         {staff.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <div>
-                      <h4 className="font-bold text-zinc-900 dark:text-white text-sm">{staff.name}</h4>
-                      <p className="text-xs text-zinc-400">{staff.phone}</p>
+                      <h4 className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                        {staff.name}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">{staff.phone || 'Telefon kiritilmagan'}</p>
                       <span
                         className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 border ${
                           isMain
@@ -238,33 +293,56 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
                             : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800/50'
                         }`}
                       >
-                        {isMain ? <><Crown aria-hidden="true" className="h-3 w-3" /> Bosh Admin</> : <><Briefcase aria-hidden="true" className="h-3 w-3" /> Tur Admin</>}
+                        {isMain ? (
+                          <>
+                            <Crown aria-hidden="true" className="h-3 w-3" /> Bosh Admin (Yagona)
+                          </>
+                        ) : (
+                          <>
+                            <Briefcase aria-hidden="true" className="h-3 w-3" /> Tur Admin (3% to‘lov)
+                          </>
+                        )}
                       </span>
                     </div>
                   </div>
 
                   {!isMain && (
-                    <button
-                      onClick={() => {
-                        if (confirm(`"${staff.name}" xodimini o'chirishni tasdiqlaysizmi?`)) {
-                          void onRemoveStaff(staff.id).then(() => onShowToast("Tur admin o'chirildi", 'info'))
-                            .catch((error) => onShowToast(error instanceof Error ? error.message : "Tur adminni o'chirib bo'lmadi.", 'error'));
-                        }
-                      }}
-                      className="text-zinc-400 hover:text-rose-600 p-1 transition"
-                      title="O'chirish"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteStaff(staff)}
+                      className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition"
+                      title="Tur adminni o‘chirish"
                     >
                       <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
+                    </Button>
                   )}
                 </div>
 
-                {/* Login metadata only; passwords are never returned from the server. */}
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-2 text-xs">
+                {/* Assigned Destinations */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground block">
+                    Biriktirilgan yo‘nalishlar:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {staff.assignedDestinations && staff.assignedDestinations.length > 0 ? (
+                      staff.assignedDestinations.map(d => (
+                        <Badge key={d} variant="outline" className="text-[10px] py-0 px-2 bg-muted/60">
+                          {d}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground italic">Barcha yo‘nalishlar</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Login metadata */}
+                <div className="p-3 rounded-xl bg-muted/50 border border-border space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[15px] text-indigo-600 dark:text-indigo-400">key</span>
-                      Kirish Ma'lumotlari:
+                      Kirish Ma‘lumotlari:
                     </span>
                     <button
                       type="button"
@@ -280,76 +358,103 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="bg-card px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                      <span className="text-[10px] text-zinc-400 block font-medium">Login:</span>
+                    <div className="bg-card px-2.5 py-1.5 rounded-xl border border-border">
+                      <span className="text-[10px] text-muted-foreground block font-medium">Login:</span>
                       <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold truncate block">
                         @{displayUser}
                       </span>
                     </div>
 
-                    <div className="bg-card px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                      <span className="text-[10px] text-zinc-400 block font-medium">Parol:</span>
-                      <span className="text-zinc-900 dark:text-white font-mono font-bold truncate block">Bazaviy himoyalangan</span>
+                    <div className="bg-card px-2.5 py-1.5 rounded-xl border border-border">
+                      <span className="text-[10px] text-muted-foreground block font-medium">Parol:</span>
+                      <span className="text-foreground font-mono font-bold truncate block">Himoyalangan</span>
                     </div>
                   </div>
                 </div>
-              </div>
+
+                {/* Card Action: Delete Button for Tour Admins */}
+                {!isMain && (
+                  <div className="pt-1 flex items-center justify-between border-t border-border">
+                    <span className="text-[11px] text-muted-foreground">
+                      Daromatdan 3% to‘lov majburiy
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteStaff(staff)}
+                      className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:border-destructive/30 gap-1 px-2.5"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">delete</span>
+                      <span>O‘chirish</span>
+                    </Button>
+                  </div>
+                )}
+              </Card>
             );
           })}
         </div>
       )}
 
-      {/* 4. MODAL */}
+      {/* 5. MODAL: YANGI TUR ADMIN OCHISH */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-card border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                <Shield aria-hidden="true" className="h-4 w-4" />
-                <span>Yangi Tur Admin Tayinlash</span>
+          <div className="bg-card border border-border rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <ShieldCheck aria-hidden="true" className="h-5 w-5 text-indigo-600" />
+                <span>Yangi Tur Adminini Ochish</span>
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
               >
                 ✕
               </button>
             </div>
 
+            <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900 text-xs text-indigo-900 dark:text-indigo-300 space-y-1">
+              <p className="font-bold">Tur Admin huquqlari va shartlari:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-muted-foreground dark:text-indigo-300/80">
+                <li>O‘z turlarini kiritish va o‘z buyurtmalarini boshqarish.</li>
+                <li><b>O‘z daromadidan 3% komissiya Bosh Adminga to‘lanadi</b> (97% sof foyda tur adminda qoladi).</li>
+                <li><b>Mijozlar shaxsiy ro‘yxatiga (users) kirish huquqi yo‘q</b>.</li>
+              </ul>
+            </div>
+
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-1">
-                    Xodim Ismi & Familiyasi *
+                  <label className="text-xs font-semibold text-foreground block mb-1">
+                    Tur Admin Ismi & Familiyasi *
                   </label>
-                  <input
+                  <Input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="Masalan: Sardor Rahimiy"
-                    className="w-full bg-zinc-100/90 dark:bg-zinc-800/80 text-zinc-900 dark:text-white rounded-xl px-3 py-2 text-xs border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none"
+                    placeholder="Masalan: Jamshid Turayev"
+                    className="h-9 text-xs"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-1">
+                    <label className="text-xs font-semibold text-foreground block mb-1">
                       Login (Username) *
                     </label>
-                    <input
+                    <Input
                       type="text"
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="tur_sardor"
-                      className="w-full bg-zinc-100/90 dark:bg-zinc-800/80 text-zinc-900 dark:text-white rounded-xl px-3 py-2 text-xs border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none font-mono"
+                      placeholder="tur_jamshid"
+                      className="h-9 text-xs font-mono"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block">
+                      <label className="text-xs font-semibold text-foreground block">
                         Parol *
                       </label>
                       <button
@@ -357,21 +462,21 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
                         onClick={generateRandomPassword}
                         className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
                       >
-                        Qayta generatsiya
+                        Generatsiya
                       </button>
                     </div>
                     <div className="relative">
-                      <input
+                      <Input
                         type={showModalPassword ? 'text' : 'password'}
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-zinc-100/90 dark:bg-zinc-800/80 text-zinc-900 dark:text-white rounded-xl px-3 py-2 text-xs border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none font-mono"
+                        className="h-9 text-xs font-mono pr-8"
                       />
                       <button
                         type="button"
                         onClick={() => setShowModalPassword(!showModalPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
                       >
                         <span className="material-symbols-outlined text-[16px]">
                           {showModalPassword ? 'visibility_off' : 'visibility'}
@@ -382,46 +487,72 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-1">
+                  <label className="text-xs font-semibold text-foreground block mb-1">
                     Telefon Raqami
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+998 90 123 45 67"
-                    className="w-full bg-zinc-100/90 dark:bg-zinc-800/80 text-zinc-900 dark:text-white rounded-xl px-3 py-2 text-xs border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none"
+                    className="h-9 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-1">
+                  <label className="text-xs font-semibold text-foreground block mb-1">
                     Email (Ixtiyoriy)
                   </label>
-                  <input
+                  <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="xodim@sayrhub.uz"
-                    className="w-full bg-zinc-100/90 dark:bg-zinc-800/80 text-zinc-900 dark:text-white rounded-xl px-3 py-2 text-xs border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none"
+                    placeholder="tur_admin@sayrhub.uz"
+                    className="h-9 text-xs"
                   />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1.5">
+                    Mas‘ul Yo‘nalishlar (Destinations)
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {POPULAR_DESTINATIONS.map((dest) => {
+                      const isSelected = selectedDestinations.includes(dest);
+                      return (
+                        <button
+                          key={dest}
+                          type="button"
+                          onClick={() => toggleDestination(dest)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-muted text-muted-foreground border-border hover:text-foreground'
+                          }`}
+                        >
+                          {dest}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                <button
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 text-xs font-semibold"
+                  className="h-9 text-xs"
                 >
                   Bekor qilish
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-2xs"
+                  className="h-9 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs"
                 >
-                  Adminni Tayinlash
-                </button>
+                  Yangi Tur Adminini Ochish
+                </Button>
               </div>
             </form>
           </div>

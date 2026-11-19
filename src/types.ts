@@ -48,10 +48,18 @@ export interface TourPackage {
   tourOperator?: string; // e.g. 'Kompas Tour'
   agencyName?: string; // e.g. 'SayrHub' / 'TravelWay'
   operatorBadge?: string; // e.g. 'Kompas Tour Rasmiy'
+  // Admin Ownership
+  adminId?: string;
+  adminUsername?: string;
+  adminName?: string;
 }
 
 export interface Booking {
   id: string;
+  tourId?: string;
+  adminId?: string;
+  adminUsername?: string;
+  adminName?: string;
   tourTitle: string;
   dest: string;
   dates: string;

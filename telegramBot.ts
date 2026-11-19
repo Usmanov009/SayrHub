@@ -1,4 +1,4 @@
-import { randomBytes, randomInt } from 'crypto';
+import { randomBytes, randomInt, createHmac } from 'crypto';
 import { getDBStatus, UserModel, TelegramSessionModel } from './db.js';
 import { generateToken } from './src/server/auth.js';
 
@@ -171,6 +171,165 @@ export async function verifyTelegramCode(code: string, sessionToken?: string) {
 }
 
 /**
+ * Helper to get the canonical Telegram Mini App URL
+ */
+export function getMiniAppUrl(): string {
+  return process.env.WEBAPP_URL || process.env.RENDER_EXTERNAL_URL || 'https://sayrhub.uz';
+}
+
+/**
+ * Validates Telegram Mini App initData cryptographic hash (HMAC-SHA256)
+ */
+export function validateTelegramWebAppData(
+  initData: string,
+  botToken: string = TELEGRAM_BOT_TOKEN || ''
+): { isValid: boolean; user?: any; error?: string } {
+  if (!initData || typeof initData !== 'string') {
+    return { isValid: false, error: 'initData belgilanmagan' };
+  }
+
+  const urlParams = new URLSearchParams(initData);
+  const hash = urlParams.get('hash');
+  if (!hash) {
+    return { isValid: false, error: 'Xavfsizlik kaliti (hash) topilmadi' };
+  }
+
+  // Remove hash and sort remaining keys alphabetically
+  urlParams.delete('hash');
+  const params: string[] = [];
+  Array.from(urlParams.keys())
+    .sort()
+    .forEach((key) => {
+      params.push(`${key}=${urlParams.get(key)}`);
+    });
+  const dataCheckString = params.join('\n');
+
+  if (botToken) {
+    const secretKey = createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const calculatedHash = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+    if (calculatedHash !== hash) {
+      return { isValid: false, error: 'Telegram ma’lumotlari tekshiruvdan o‘tmadi (noto‘g‘ri imzo)' };
+    }
+  }
+
+  let user: any = null;
+  const rawUser = urlParams.get('user');
+  if (rawUser) {
+    try {
+      user = JSON.parse(rawUser);
+    } catch {
+      return { isValid: false, error: 'Foydalanuvchi ma’lumotlarini o‘qib bo‘lmadi' };
+    }
+  }
+
+  return { isValid: true, user };
+}
+
+/**
+ * Seamlessly authenticates or registers a user opening the Telegram Mini App
+ */
+export async function authenticateTelegramWebApp(initData: string, botToken?: string) {
+  const tokenToUse = botToken || TELEGRAM_BOT_TOKEN || '';
+  const validation = validateTelegramWebAppData(initData, tokenToUse);
+  if (!validation.isValid || !validation.user) {
+    return { success: false, error: validation.error || 'Telegram autentifikatsiyasi muvaffaqiyatsiz bo‘ldi' };
+  }
+
+  const tgUser = validation.user;
+  const telegramId = String(tgUser.id);
+  const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ').trim() || tgUser.username || 'SayrHub Mijoz';
+  const tgUsername = tgUser.username ? `@${tgUser.username}` : '';
+  const photoUrl = tgUser.photo_url || '';
+
+  let dbUser: any = null;
+
+  if (getDBStatus().connected) {
+    try {
+      const existingUser = await UserModel.findOne({ telegramId }).select('status').lean();
+      if (existingUser?.status === 'blocked') {
+        return { success: false, error: 'Akkauntingiz bloklangan. Yordam uchun qo‘llab-quvvatlash xizmatiga murojaat qiling.' };
+      }
+
+      dbUser = await UserModel.findOneAndUpdate(
+        { telegramId },
+        {
+          $set: {
+            tcId: 'tw-' + tgUser.id,
+            name: fullName,
+            telegramId,
+            telegramUsername: tgUsername,
+            ...(photoUrl ? { avatar: photoUrl } : {})
+          },
+          $setOnInsert: {
+            phone: '',
+            citizenship: "O'zbekiston",
+            cashbackBalance: 30
+          }
+        },
+        { upsert: true, returnDocument: 'after' }
+      );
+    } catch (e: any) {
+      console.warn('MongoDB webapp user upsert fallback to memory:', e?.message || e);
+    }
+  }
+
+  if (!dbUser) {
+    dbUser = {
+      tcId: 'tw-' + tgUser.id,
+      name: fullName,
+      phone: '',
+      telegramId,
+      telegramUsername: tgUsername,
+      avatar: photoUrl,
+      citizenship: "O'zbekiston",
+      cashbackBalance: 30,
+      isVerified: true
+    };
+  }
+
+  const userToken = generateToken({
+    id: dbUser.tcId,
+    username: dbUser.phone || dbUser.tcId,
+    role: 'user',
+    name: dbUser.name
+  }, '30d');
+
+  return {
+    success: true,
+    user: dbUser,
+    token: userToken
+  };
+}
+
+/**
+ * Configure persistent chat menu button to launch the Telegram Mini App
+ */
+export async function setupTelegramMenuButton(customUrl?: string) {
+  if (!TELEGRAM_BOT_TOKEN) return;
+  const url = customUrl || getMiniAppUrl();
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setChatMenuButton`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_button: {
+          type: 'web_app',
+          text: 'SayrHub Mini App',
+          web_app: { url }
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      console.log('✅ Telegram Bot chat menu button configured:', url);
+    }
+  } catch (err: any) {
+    console.warn('Telegram setChatMenuButton warning:', err?.message || err);
+  }
+}
+
+/**
  * Sends a message via the Telegram Bot API
  */
 export async function sendTelegramMessage(chatId: number | string, text: string, replyMarkup?: any) {
@@ -225,9 +384,11 @@ export async function notifyBookingCreated(booking: any) {
       `<i>SayrHub jamoasi tez orada siz bilan bog'lanadi!</i>`;
 
     if (userChatId) {
+      const miniAppUrl = getMiniAppUrl();
       await sendTelegramMessage(userChatId, bookingText, {
         inline_keyboard: [
-          [{ text: "📱 SayrHub ilovasiga o'tish", url: "https://sayrhub.uz" }]
+          [{ text: "🎫 Vaucher & Chiptani ko'rish", web_app: { url: `${miniAppUrl}?tab=trips&bookingId=${booking.id || booking.voucherId}` } }],
+          [{ text: "🚀 SayrHub Mini App", web_app: { url: miniAppUrl } }]
         ]
       });
     }
@@ -258,6 +419,44 @@ export async function processTelegramUpdate(update: any) {
   const chatId = message.chat.id;
   const user = message.from;
   const text = (message.text || '').trim();
+  const miniAppUrl = getMiniAppUrl();
+
+  // Quick Mini App Direct Commands
+  if (text === '/app' || text === '/webapp' || text === '/tours' || text === '/qidiruv') {
+    await sendTelegramMessage(chatId, `🛫 <b>SayrHub Mini App</b>\n\nKompas Tour bilan 1:1 jonli integratsiya qilingan arzon turpaketlar va charter reyslar qidiruvi:`, {
+      inline_keyboard: [
+        [{ text: "🚀 SayrHub Mini Appni ochish", web_app: { url: `${miniAppUrl}?tab=search` } }]
+      ]
+    });
+    return;
+  }
+
+  if (text === '/qaynoq' || text === '/hot') {
+    await sendTelegramMessage(chatId, `🔥 <b>Qaynoq takliflar (Hot Deals)</b>\n\nEng so'nggi chegirmalar va qaynoq o'rinlar:`, {
+      inline_keyboard: [
+        [{ text: "🔥 Qaynoq takliflarni ko'rish", web_app: { url: `${miniAppUrl}?tab=hot` } }]
+      ]
+    });
+    return;
+  }
+
+  if (text === '/trips' || text === '/turlarim') {
+    await sendTelegramMessage(chatId, `🧳 <b>Mening turlarim</b>\n\nBuyurtmalar tarixi, vaucherlar va elektron chiptalarni ko'rish:`, {
+      inline_keyboard: [
+        [{ text: "🧳 Turlarim & Vaucherlar", web_app: { url: `${miniAppUrl}?tab=trips` } }]
+      ]
+    });
+    return;
+  }
+
+  if (text === '/profil' || text === '/profile') {
+    await sendTelegramMessage(chatId, `👤 <b>Foydalanuvchi profili</b>\n\nShaxsiy ma'lumotlar, pasport va to'lov kartalari:`, {
+      inline_keyboard: [
+        [{ text: "👤 Profilni ochish", web_app: { url: `${miniAppUrl}?tab=profile` } }]
+      ]
+    });
+    return;
+  }
 
   // 1. Command /start or /start reg_xxxx
   if (text.startsWith('/start')) {
@@ -276,15 +475,32 @@ export async function processTelegramUpdate(update: any) {
     const firstName = user.first_name || 'Hurmatli foydalanuvchi';
     const welcomeText = `👋 Assalomu alaykum, <b>${firstName}</b>!\n\n` +
       `🛫 <b>SayrHub</b> rasmiy sayohat platformasiga xush kelibsiz!\n\n` +
-      `🔐 Ilovada <b>ro'yxatdan o'tish</b> yoki hisobingizga kirish uchun quyidagi <b>"📱 Telefon raqamni ulashish"</b> tugmasini bosing:`;
+      `✨ Endi siz Telegram ichidan chiqmasdan butun dunyo bo'ylab eng arzon turpaketlarni qidirishingiz, qaynoq chegirmalarni topishingiz va xavfsiz bron qilishingiz mumkin.\n\n` +
+      `🚀 SayrHub Mini Appni darhol ochish uchun quyidagi tugmani bosing:`;
 
     await sendTelegramMessage(chatId, welcomeText, {
-      keyboard: [
-        [{ text: "📱 Telefon raqamni ulashish", request_contact: true }]
-      ],
-      resize_keyboard: true,
-      one_time_keyboard: true
+      inline_keyboard: [
+        [{ text: "🚀 SayrHub Mini Appni ochish", web_app: { url: miniAppUrl } }],
+        [
+          { text: "🔥 Qaynoq turlar", web_app: { url: `${miniAppUrl}?tab=hot` } },
+          { text: "🔍 Qidiruv", web_app: { url: `${miniAppUrl}?tab=search` } }
+        ],
+        [
+          { text: "🧳 Mening buyurtmalarim", web_app: { url: `${miniAppUrl}?tab=trips` } },
+          { text: "👤 Profil", web_app: { url: `${miniAppUrl}?tab=profile` } }
+        ]
+      ]
     });
+
+    if (sessionParam) {
+      await sendTelegramMessage(chatId, `Ilovada telefon raqamingizni tasdiqlash uchun quyidagi <b>"📱 Telefon raqamni ulashish"</b> tugmasini bosing:`, {
+        keyboard: [
+          [{ text: "📱 Telefon raqamni ulashish", request_contact: true }]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: true
+      });
+    }
     return;
   }
 
@@ -386,7 +602,7 @@ export async function processTelegramUpdate(update: any) {
 
     await sendTelegramMessage(chatId, successText, {
       inline_keyboard: [
-        [{ text: "🚀 SayrHub ilovasiga kirish", url: "https://sayrhub.uz" }]
+        [{ text: "🚀 SayrHub Mini Appga kirish", web_app: { url: miniAppUrl } }]
       ]
     });
     return;
@@ -480,7 +696,7 @@ export async function processTelegramUpdate(update: any) {
 
       await sendTelegramMessage(chatId, reply, {
         inline_keyboard: [
-          [{ text: "🚀 SayrHub ilovasiga kirish", url: "https://sayrhub.uz" }]
+          [{ text: "🚀 SayrHub Mini Appga kirish", web_app: { url: miniAppUrl } }]
         ]
       });
       return;
@@ -511,6 +727,7 @@ export function startTelegramPolling() {
   }
   isPolling = true;
   console.log(`🤖 Telegram Bot @${TELEGRAM_BOT_USERNAME} polling service started...`);
+  void setupTelegramMenuButton();
 
   const poll = async () => {
     while (isPolling) {

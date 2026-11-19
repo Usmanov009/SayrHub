@@ -63,7 +63,7 @@ export const AdminToursManager: React.FC<AdminToursManagerProps> = ({
   const [childrenCount, setChildrenCount] = useState(0);
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(99999);
-  const [sourceFilter, setSourceFilter] = useState<'ALL' | 'KOMPAS' | 'ADMIN'>('ALL');
+  const [sourceFilter, setSourceFilter] = useState<'ALL' | 'KOMPAS' | 'ADMIN' | 'MY_TOURS'>('ALL');
 
   // Active country object & resorts
   const currentCountryObj = useMemo(() => {
@@ -184,7 +184,10 @@ export const AdminToursManager: React.FC<AdminToursManagerProps> = ({
         flight: formFlight,
         img: formImg,
         is5Star: formHotelStars.includes('5'),
-        departureDate: formDepartureDate
+        departureDate: formDepartureDate,
+        adminId: editingTour.adminId || currentAdmin.id,
+        adminUsername: editingTour.adminUsername || currentAdmin.username,
+        adminName: editingTour.adminName || currentAdmin.name,
       };
       await onUpdateTour(updated);
       onShowToast(`"${formTitle}" muvaffaqiyatli yangilandi!`, 'success');
@@ -212,7 +215,10 @@ export const AdminToursManager: React.FC<AdminToursManagerProps> = ({
         saved: false,
         category: formMealType,
         badgeType: formHotelStars.includes('5') ? 'ultra' : 'luxury',
-        seatsStatus: 'request'
+        seatsStatus: 'request',
+        adminId: currentAdmin.id,
+        adminUsername: currentAdmin.username,
+        adminName: currentAdmin.name,
       };
       await onAddTour(newTour);
       onShowToast(`Yangi "${formTitle}" turpaketi qo'shildi!`, 'success');
@@ -371,7 +377,8 @@ export const AdminToursManager: React.FC<AdminToursManagerProps> = ({
     const matchSource =
       sourceFilter === 'ALL' ||
       (sourceFilter === 'KOMPAS' && (t.isLiveKompas || !!t.kompasTourCode)) ||
-      (sourceFilter === 'ADMIN' && !t.isLiveKompas && !t.kompasTourCode);
+      (sourceFilter === 'ADMIN' && !t.isLiveKompas && !t.kompasTourCode) ||
+      (sourceFilter === 'MY_TOURS' && (t.adminId === currentAdmin?.id || (t.adminUsername && t.adminUsername === currentAdmin?.username)));
 
     return matchSearch && matchCountry && matchResort && matchStars && matchMeal && matchNights && matchPrice && matchType && matchSource;
   });
@@ -735,7 +742,8 @@ export const AdminToursManager: React.FC<AdminToursManagerProps> = ({
               {[
                 { code: 'ALL', label: 'Barchasi' },
                 { code: 'KOMPAS', label: 'Kompas Live' },
-                { code: 'ADMIN', label: 'Admin' }
+                { code: 'ADMIN', label: 'Admin turlari' },
+                { code: 'MY_TOURS', label: 'Mening turlarim' }
               ].map((src) => (
                 <button
                   key={src.code}
@@ -868,6 +876,15 @@ export const AdminToursManager: React.FC<AdminToursManagerProps> = ({
                                 <CalendarDays aria-hidden="true" className="h-3 w-3" /> {tour.departureDate}
                               </span>
                             )}
+                            {tour.adminId === currentAdmin?.id ? (
+                              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
+                                Mening turim
+                              </span>
+                            ) : (tour.adminName || tour.adminUsername) ? (
+                              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                                Admin: {tour.adminName || tour.adminUsername}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
                       </div>

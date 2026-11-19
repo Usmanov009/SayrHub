@@ -104,16 +104,23 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
   const readyCount = bookings.filter(b => b.status === 'Vaucher tayyor').length;
   const cancelledCount = bookings.filter(b => b.status === 'Bekor qilingan').length;
 
+  const isTourAdmin = currentRole === 'tour_admin';
+  const totalRevenue = bookings.filter(b => b.status !== 'Bekor qilingan').reduce((sum, b) => sum + (Number(b.totalNumeric) || 0), 0);
+  const commission3Percent = Math.round(totalRevenue * 0.03);
+  const netEarnings = totalRevenue - commission3Percent;
+
   return (
     <div className="space-y-6">
       {/* 1. Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <ClipboardList aria-hidden="true" className="h-4 w-4" /> Mijozlar Buyurtmalari & Vaucherlar ({bookings.length})
+            <ClipboardList aria-hidden="true" className="h-4 w-4" /> {isTourAdmin ? "Mening Buyurtmalarim & Vaucherlar" : "Barcha Buyurtmalar & Vaucherlar"} ({bookings.length})
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Ilovadan tushgan barcha bronlar, to'lovlar va elektron vaucherlar nazorati
+            {isTourAdmin
+              ? "O‘zingizning turlaringiz bo‘yicha tushgan bronlar, to‘lovlar va 3% komissiya hisob-kitobi"
+              : "Platformadagi barcha bronlar, to‘lovlar va elektron vaucherlar nazorati"}
           </p>
         </div>
 
@@ -144,6 +151,38 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 1.5 Revenue & 3% Commission Overview Bar */}
+      {isTourAdmin ? (
+        <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[20px] text-indigo-600 dark:text-indigo-400">account_balance_wallet</span>
+            <div>
+              <p className="font-bold text-zinc-900 dark:text-white">O‘z daromadingiz va 3% Bosh Adminga to‘lov</p>
+              <p className="text-zinc-500 dark:text-zinc-400">Daromatdan 3% Bosh Adminga to‘lanadi, 97% sizning sof foydangiz hisoblanadi.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 font-bold shrink-0">
+            <span className="px-2.5 py-1 rounded-lg bg-card border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">Jami: ${totalRevenue}</span>
+            <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900">-3% To‘lov: ${commission3Percent}</span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">= Sof: ${netEarnings}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[20px] text-amber-600 dark:text-amber-400">payments</span>
+            <div>
+              <p className="font-bold text-zinc-900 dark:text-white">Bosh Admin: Jami platforma buyurtmalari monitoringi</p>
+              <p className="text-zinc-500 dark:text-zinc-400">Barcha tur adminlar va buyurtmalar bo‘yicha to‘liq hisobot va nazorat.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 font-bold shrink-0">
+            <span className="px-2.5 py-1 rounded-lg bg-card border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">Umumiy: ${totalRevenue}</span>
+            <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900">3% komissiya: ${commission3Percent}</span>
+          </div>
+        </div>
+      )}
 
       {/* 2. Filter Pills & Search Bar */}
       <div className="p-4 rounded-2xl bg-card border border-zinc-200/90 dark:border-zinc-800 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -300,6 +339,12 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
                       </td>
                       <td className="py-3.5 px-3">
                         <span className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">{b.price}</span>
+                        {isTourAdmin && b.totalNumeric ? (
+                          <div className="flex flex-col text-[10px] text-muted-foreground mt-0.5">
+                            <span className="text-rose-600 dark:text-rose-400 font-medium">3% to‘lov: ${Math.round(b.totalNumeric * 0.03)}</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sof: ${b.totalNumeric - Math.round(b.totalNumeric * 0.03)}</span>
+                          </div>
+                        ) : null}
                       </td>
                       <td className="py-3.5 px-3">
                         {isApproved ? (

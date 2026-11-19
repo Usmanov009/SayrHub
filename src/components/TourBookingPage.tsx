@@ -33,6 +33,7 @@ import {
   HeartHandshake,
   Hotel
 } from '@/lib/flaticon-icons';
+import { hapticLight, hapticSuccess, hapticError, hapticSelection } from '../lib/telegramWebApp';
 
 interface TourBookingPageProps {
   tour: TourPackage;
@@ -102,6 +103,7 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
 
   const handleBookingSubmit = async () => {
     if (!leadName.trim()) {
+      hapticError();
       onShowToast("Iltimos, asosiy sayohatchining ism va familiyasini kiriting!", 'error');
       return;
     }
@@ -121,7 +123,9 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
         adultsCount,
         childrenCount
       });
+      hapticSuccess();
     } catch (error) {
+      hapticError();
       onShowToast(error instanceof Error ? error.message : 'Bron so‘rovini saqlab bo‘lmadi.', 'error');
     } finally {
       setIsSubmitting(false);

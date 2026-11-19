@@ -111,9 +111,9 @@ router.post('/login', async (req, res) => {
 });
 
 // ==========================================
-// 2. ADMIN STAFF MANAGEMENT (PROTECTED)
+// 2. ADMIN STAFF MANAGEMENT (PROTECTED - ONLY MAIN ADMIN)
 // ==========================================
-router.get('/staff', authenticateToken, requireRole('main_admin', 'tour_admin'), async (req: AuthRequest, res) => {
+router.get('/staff', authenticateToken, requireRole('main_admin'), async (req: AuthRequest, res) => {
   if (!getDBStatus().connected) {
     return res.status(503).json({ success: false, error: 'MongoDB ulanmagan; admin ro‘yxati mavjud emas.' });
   }

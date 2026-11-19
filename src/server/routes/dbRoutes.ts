@@ -68,6 +68,11 @@ router.post('/tours', authenticateToken, requireRole(...adminRoles), requireData
       return res.status(400).json({ success: false, error: 'Tur ID va nomi kiritilishi shart.' });
     }
     const { _id: _ignoredId, __v: _ignoredVersion, ...tourData } = tour;
+    if (req.user?.role === 'tour_admin') {
+      tourData.adminId = tourData.adminId || req.user.id;
+      tourData.adminUsername = tourData.adminUsername || req.user.username;
+      tourData.adminName = tourData.adminName || req.user.name || 'Tur Admin';
+    }
     const savedTour = await TourModel.findOneAndUpdate(
       { id: String(tour.id) },
       { $set: tourData },
@@ -353,7 +358,7 @@ router.delete('/price-alerts/:id', authenticateToken, requireDatabase, async (re
   }
 });
 
-router.get('/users', authenticateToken, requireRole(...adminRoles), requireDatabase, async (_req, res) => {
+router.get('/users', authenticateToken, requireRole('main_admin'), requireDatabase, async (_req, res) => {
   try {
     const users = await UserModel.find().sort({ createdAt: -1 }).lean();
     const bookingCounts = await BookingModel.aggregate([
@@ -378,7 +383,7 @@ router.get('/users', authenticateToken, requireRole(...adminRoles), requireDatab
   }
 });
 
-router.get('/users/count', authenticateToken, requireRole(...adminRoles), requireDatabase, async (_req, res) => {
+router.get('/users/count', authenticateToken, requireRole('main_admin'), requireDatabase, async (_req, res) => {
   try {
     const count = await UserModel.countDocuments();
     return res.json({ success: true, count });

@@ -15,6 +15,7 @@ import {
   MapPinned, Moon, Plane, PlaneTakeoff, RotateCw, Search, ShieldCheck, Sparkles,
   Tag, Utensils, Users, Waves
 } from '@/lib/flaticon-icons';
+import { hapticLight, hapticSelection, hapticSuccess } from '../lib/telegramWebApp';
 
 const AllToursInteractiveMap = lazy(() =>
   import('./GoogleTourMap').then((module) => ({
@@ -654,8 +655,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           type="button"
           id="tab-mode-tours"
           variant={serviceMode === 'tours' ? 'default' : 'ghost'}
-          onClick={() => setServiceMode('tours')}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5"
+          onClick={() => {
+            hapticSelection();
+            setServiceMode('tours');
+          }}
+          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
         >
           <Waves className="size-4" />
           <span className="text-[10px] leading-tight font-bold">Turpaketlar</span>
@@ -665,8 +669,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           type="button"
           id="tab-mode-combo"
           variant={serviceMode === 'combo' ? 'default' : 'ghost'}
-          onClick={() => setServiceMode('combo')}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5"
+          onClick={() => {
+            hapticSelection();
+            setServiceMode('combo');
+          }}
+          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
         >
           <RotateCw className="size-4" />
           <span className="text-[10px] leading-tight font-bold">Combo</span>
@@ -676,8 +683,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           type="button"
           id="tab-mode-flights"
           variant={serviceMode === 'flights' ? 'default' : 'ghost'}
-          onClick={() => setServiceMode('flights')}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5"
+          onClick={() => {
+            hapticSelection();
+            setServiceMode('flights');
+          }}
+          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
         >
           <Plane className="size-4" />
           <span className="text-[10px] leading-tight font-bold">Biletlar</span>
@@ -687,8 +697,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           type="button"
           id="tab-mode-hotels"
           variant={serviceMode === 'hotels' ? 'default' : 'ghost'}
-          onClick={() => setServiceMode('hotels')}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5"
+          onClick={() => {
+            hapticSelection();
+            setServiceMode('hotels');
+          }}
+          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
         >
           <Hotel className="size-4" />
           <span className="text-[10px] leading-tight font-bold">Mehmonxona</span>
@@ -1486,8 +1499,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 rounded-xl text-xs font-semibold h-9"
-                    onClick={() => onOpenTourDetails(tour)}
+                    className="flex-1 rounded-xl text-xs font-semibold h-9 cursor-pointer"
+                    onClick={() => {
+                      hapticLight();
+                      onOpenTourDetails(tour);
+                    }}
                     type="button"
                   >
                     Batafsil
@@ -1496,8 +1512,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                   <Button
                     variant="default"
                     size="sm"
-                    className="px-4 text-xs font-bold rounded-xl h-9 gap-1.5"
-                    onClick={() => onQuickBook(tour, totalTravelers, adultsCount, childrenCount)}
+                    className="px-4 text-xs font-bold rounded-xl h-9 gap-1.5 cursor-pointer"
+                    onClick={() => {
+                      hapticLight();
+                      onQuickBook(tour, totalTravelers, adultsCount, childrenCount);
+                    }}
                     type="button"
                   >
                     <span>Bron qilish</span>

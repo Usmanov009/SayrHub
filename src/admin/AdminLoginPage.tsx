@@ -157,6 +157,15 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
               </div>
             </div>
 
+            <div className="p-3 rounded-xl bg-muted/60 border border-border text-[11px] text-muted-foreground space-y-1">
+              <div className="font-semibold text-foreground flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span>Admin turlari & Qoidalar:</span>
+              </div>
+              <p><b>👑 Bosh Admin:</b> Barcha funksiyalar, daromadlar va mijozlar bazasi.</p>
+              <p><b>💼 Tur Admin:</b> O‘z daromadi, Bosh adminga 3% to‘lov, mijozlar ro‘yxatisiz.</p>
+            </div>
+
             <Button
               type="submit"
               disabled={isLoading}

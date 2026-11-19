@@ -47,11 +47,18 @@ const TourSchema = new mongoose.Schema({
   inclusions: [String],
   lat: Number,
   lng: Number,
+  adminId: String,
+  adminUsername: String,
+  adminName: String,
 }, { timestamps: true, strict: false });
 
 // Booking Schema
 const BookingSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  tourId: String,
+  adminId: String,
+  adminUsername: String,
+  adminName: String,
   tourTitle: { type: String, required: true },
   dest: String,
   dates: String,

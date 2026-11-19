@@ -120,8 +120,15 @@ export async function saveStaff(
 
 export async function deleteStaff(id: string): Promise<{ success: boolean; error?: string }> {
   assertDatabaseReady();
+  if (id === 'adm-root') {
+    return { success: false, error: 'Bosh adminni o‘chirib bo‘lmaydi. Tizimda faqat bitta bosh admin bo‘lishi shart.' };
+  }
+  const staff = await AdminStaffModel.findOne({ id }).lean() as unknown as AdminStaffRecord | null;
+  if (staff && staff.role === 'main_admin') {
+    return { success: false, error: 'Bosh adminni o‘chirib bo‘lmaydi. Tizimda faqat bitta bosh admin bo‘lishi shart.' };
+  }
   const result = await AdminStaffModel.deleteOne({ id });
   return result.deletedCount
     ? { success: true }
-    : { success: false, error: 'O‘chiriladigan admin xodimi topilmadi.' };
+    : { success: false, error: 'O‘chiriladigan tur admin xodimi topilmadi.' };
 }

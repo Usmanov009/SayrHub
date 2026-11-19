@@ -60,6 +60,8 @@ export function AppSidebar({
     },
   ]
 
+  const isMainAdmin = currentAdmin.role === 'main_admin';
+
   const documents = [
     {
       key: "bookings",
@@ -71,11 +73,20 @@ export function AppSidebar({
       name: "Narx signallari",
       icon: <IconPlaceholder lucide="BellIcon" />,
     },
-    {
-      key: "users",
-      name: "Mijozlar bazasi",
-      icon: <IconPlaceholder lucide="UsersIcon" />,
-    },
+    ...(isMainAdmin
+      ? [
+          {
+            key: "users",
+            name: "Mijozlar bazasi",
+            icon: <IconPlaceholder lucide="UsersIcon" />,
+          },
+          {
+            key: "staff",
+            name: "Tur adminlar",
+            icon: <IconPlaceholder lucide="ShieldCheckIcon" />,
+          },
+        ]
+      : []),
   ]
 
   const navSecondary = [

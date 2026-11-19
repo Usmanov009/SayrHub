@@ -2,6 +2,7 @@ import React from 'react';
 import { TabType } from '../types';
 import { Badge } from '@/components/ui/badge';
 import { Search, Compass, Flame, Luggage, User } from '@/lib/flaticon-icons';
+import { hapticSelection } from '../lib/telegramWebApp';
 
 interface BottomNavProps {
   currentTab: TabType;
@@ -14,13 +15,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onTabSelect,
   activeTripsCount
 }) => {
+  const handleSelect = (tab: TabType) => {
+    hapticSelection();
+    onTabSelect(tab);
+  };
+
   return (
     <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-md border-t border-border shadow-lg transition-colors select-none">
-      <nav className="px-2 pt-2 pb-1 flex items-center justify-around" data-purpose="mobile-bottom-nav">
+      <nav className="px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around" data-purpose="mobile-bottom-nav">
         {/* 1. Qidiruv */}
         <button
           id="nav-tab-search"
-          onClick={() => onTabSelect('search')}
+          onClick={() => handleSelect('search')}
           type="button"
           className={`flex flex-col items-center gap-1 transition-all py-1 px-3 rounded-xl cursor-pointer ${
             currentTab === 'search'
@@ -40,7 +46,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         {/* 2. Kashf etish */}
         <button
           id="nav-tab-explore"
-          onClick={() => onTabSelect('explore')}
+          onClick={() => handleSelect('explore')}
           type="button"
           className={`flex flex-col items-center gap-1 transition-all py-1 px-3 rounded-xl cursor-pointer ${
             currentTab === 'explore'
@@ -60,7 +66,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         {/* 3. Qaynoq */}
         <button
           id="nav-tab-hot"
-          onClick={() => onTabSelect('hot')}
+          onClick={() => handleSelect('hot')}
           type="button"
           className={`flex flex-col items-center gap-1 transition-all py-1 px-3 rounded-xl cursor-pointer relative ${
             currentTab === 'hot'
@@ -83,7 +89,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         {/* 4. Turlarim */}
         <button
           id="nav-tab-trips"
-          onClick={() => onTabSelect('trips')}
+          onClick={() => handleSelect('trips')}
           type="button"
           className={`flex flex-col items-center gap-1 transition-all py-1 px-3 rounded-xl cursor-pointer relative ${
             currentTab === 'trips'
@@ -109,31 +115,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <span className="text-[10px] tracking-tight">Turlarim</span>
         </button>
 
-        {/* 5. Profil / Auth */}
+        {/* 5. Profil */}
         <button
           id="nav-tab-profile"
-          onClick={() => onTabSelect(currentTab === 'auth' ? 'auth' : 'profile')}
+          onClick={() => handleSelect('profile')}
           type="button"
           className={`flex flex-col items-center gap-1 transition-all py-1 px-3 rounded-xl cursor-pointer ${
-            currentTab === 'profile' || currentTab === 'auth'
+            currentTab === 'profile'
               ? 'text-primary font-bold'
               : 'text-muted-foreground hover:text-foreground font-medium'
           }`}
         >
           <div className="relative">
             <User className="w-5 h-5" />
-            {(currentTab === 'profile' || currentTab === 'auth') && (
+            {currentTab === 'profile' && (
               <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
             )}
           </div>
           <span className="text-[10px] tracking-tight">Profil</span>
         </button>
       </nav>
-
-      {/* Modern Home Indicator Bar */}
-      <div className="pb-1.5 pt-0.5 flex justify-center items-center">
-        <div className="w-32 h-1 rounded-full bg-muted-foreground/30" />
-      </div>
     </div>
   );
 };

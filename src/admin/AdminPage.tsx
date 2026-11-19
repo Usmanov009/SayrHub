@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { TourPackage, Booking, PriceAlert, ComboTour, FlightTicket, HotelOnly } from '../types';
-import { AdminRole, AdminTab, AdminUser } from './adminTypes';
+import { AdminRole, AdminTab, AdminUser, isBookingForAdmin } from './adminTypes';
 import { AppSidebar } from './dashboard/app-sidebar';
 import { SiteHeader } from './dashboard/site-header';
 import { SectionCards } from './dashboard/section-cards';
@@ -20,7 +20,7 @@ import { AdminSettings } from './AdminSettings';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Moon, Search, Sun, X } from '@/lib/flaticon-icons';
+import { Crown, Moon, Search, Sun, X } from '@/lib/flaticon-icons';
 
 interface AdminPageProps {
   currentRole: AdminRole;
@@ -67,8 +67,8 @@ const pageTitles: Record<AdminTab, string> = {
   flights: 'Aviachiptalar',
   hotels: 'Mehmonxonalar',
   bookings: 'Buyurtmalar',
-  users: 'Mijozlar',
-  staff: 'Adminlar jamoasi',
+  users: 'Mijozlar bazasi (Faqat Bosh Admin)',
+  staff: 'Tur adminlar boshqaruvi',
   price_alerts: 'Narx signallari',
   settings: 'Tizim sozlamalari'
 };
@@ -203,7 +203,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     );
   }
 
-  const tableRows = toTableRows(bookings);
+  const isMainAdmin = currentRole === 'main_admin';
+  const effectiveBookings = React.useMemo(() => {
+    if (isMainAdmin) return bookings;
+    return bookings.filter(b => isBookingForAdmin(b, currentAdmin, tours));
+  }, [isMainAdmin, bookings, currentAdmin, tours]);
+
+  const tableRows = toTableRows(effectiveBookings);
   const showHeaderActions = currentTab !== 'dashboard';
 
   return (
@@ -227,6 +233,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
       <SidebarInset className="min-h-svh">
         <SiteHeader title={pageTitles[currentTab]}>
+          <div className="flex items-center gap-1.5 mr-auto sm:mr-0">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                isMainAdmin
+                  ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                  : 'bg-indigo-50 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800'
+              }`}
+            >
+              {isMainAdmin ? (
+                <>
+                  <Crown aria-hidden="true" className="h-3.5 w-3.5 text-amber-600" />
+                  <span>Bosh Admin</span>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[14px] text-indigo-600">work</span>
+                  <span>Tur Admin (3% to‘lov)</span>
+                </>
+              )}
+            </span>
+          </div>
+
           {showHeaderActions && (
             <>
               <div className="relative hidden w-[min(30vw,18rem)] md:block">
@@ -288,9 +316,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               {currentTab === 'dashboard' ? (
                 <>
-                  <SectionCards bookings={bookings} usersCount={usersCount} />
+                  <SectionCards
+                    bookings={bookings}
+                    usersCount={usersCount}
+                    currentAdmin={currentAdmin}
+                    tours={tours}
+                    staffList={staffList}
+                  />
                   <div className="px-4 lg:px-6">
-                    <ChartAreaInteractive bookings={bookings} />
+                    <ChartAreaInteractive bookings={effectiveBookings} />
                   </div>
                   <DataTable
                     data={tableRows}
@@ -366,7 +400,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <AdminBookingsManager
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}
-                      bookings={bookings}
+                      bookings={effectiveBookings}
                       onUpdateBookingStatus={onUpdateBookingStatus}
                       onCancelBooking={onCancelBooking}
                       onShowToast={onShowToast}

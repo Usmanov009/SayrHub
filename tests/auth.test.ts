@@ -91,4 +91,51 @@ describe('Authentication & Security Utilities', () => {
     const replay = await verifyTelegramCode('849201', token);
     expect(replay.success).toBe(false);
   });
+
+  it('should cryptographically validate Telegram Mini App initData signature', async () => {
+    const { createHmac } = await import('crypto');
+    const { validateTelegramWebAppData, authenticateTelegramWebApp } = await import('../telegramBot.js');
+
+    const botToken = '123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ';
+    const userJson = JSON.stringify({
+      id: 987654321,
+      first_name: 'Jasur',
+      last_name: 'Rahimov',
+      username: 'jasur_r',
+      language_code: 'uz'
+    });
+
+    // Form data check string
+    const authDate = String(Math.floor(Date.now() / 1000));
+    const queryId = 'AAG_TEST_123';
+    const params = [
+      `auth_date=${authDate}`,
+      `query_id=${queryId}`,
+      `user=${userJson}`
+    ].sort();
+    const dataCheckString = params.join('\n');
+
+    const secretKey = createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const validHash = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+    const validInitData = `auth_date=${encodeURIComponent(authDate)}&query_id=${encodeURIComponent(queryId)}&user=${encodeURIComponent(userJson)}&hash=${validHash}`;
+
+    // 1. Valid signature
+    const validation = validateTelegramWebAppData(validInitData, botToken);
+    expect(validation.isValid).toBe(true);
+    expect(validation.user?.id).toBe(987654321);
+    expect(validation.user?.first_name).toBe('Jasur');
+
+    // 2. Tampered signature
+    const tamperedInitData = `auth_date=${encodeURIComponent(authDate)}&query_id=${encodeURIComponent(queryId)}&user=${encodeURIComponent(userJson)}&hash=fake_tampered_hash_12345`;
+    const invalidValidation = validateTelegramWebAppData(tamperedInitData, botToken);
+    expect(invalidValidation.isValid).toBe(false);
+
+    // 3. Authenticate Telegram Mini App User
+    const authResult = await authenticateTelegramWebApp(validInitData, botToken);
+    expect(authResult.success).toBe(true);
+    expect(authResult.user?.tcId).toBe('tw-987654321');
+    expect(authResult.user?.name).toBe('Jasur Rahimov');
+    expect(authResult.token).toBeDefined();
+  });
 });

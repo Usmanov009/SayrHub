@@ -5,6 +5,17 @@ import { BottomNav } from './components/BottomNav';
 import { SearchScreen } from './components/SearchScreen';
 import { AdminRole, AdminUser } from './admin/adminTypes';
 import { AlertTriangle, Bell, CheckCircle2 } from '@/lib/flaticon-icons';
+import {
+  expandTelegramApp,
+  syncTelegramTheme,
+  isTelegramMiniApp,
+  getTelegramInitData,
+  hapticLight,
+  hapticSuccess,
+  enableClosingConfirmation,
+  disableClosingConfirmation
+} from './lib/telegramWebApp';
+import { useTelegramBackButton } from './hooks/useTelegramBackButton';
 
 const FlutterCodeViewer = lazy(() =>
   import('./components/FlutterCodeViewer').then((module) => ({
@@ -47,6 +58,12 @@ const AdminLoginPage = lazy(() =>
 );
 const AdminPage = lazy(() =>
   import('./admin/AdminPage').then((module) => ({ default: module.AdminPage }))
+);
+const NotificationsModal = lazy(() =>
+  import('./components/NotificationsModal').then((module) => ({ default: module.NotificationsModal }))
+);
+const ServerStatusModal = lazy(() =>
+  import('./components/ServerStatusModal').then((module) => ({ default: module.ServerStatusModal }))
 );
 
 export default function App() {
@@ -426,6 +443,87 @@ export default function App() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [activeVoucherBooking, setActiveVoucherBooking] = useState<Booking | null>(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isServerStatusOpen, setIsServerStatusOpen] = useState(false);
+
+  // Telegram Mini App Closing Confirmation when checkout is active
+  useEffect(() => {
+    if (checkoutTour) {
+      enableClosingConfirmation();
+    } else {
+      disableClosingConfirmation();
+    }
+  }, [checkoutTour]);
+
+  // Telegram Mini App Native Back Button
+  const isBackButtonVisible = Boolean(
+    checkoutTour ||
+    tourDetails ||
+    activeVoucherBooking ||
+    activePriceAlertTour ||
+    isNotificationsOpen ||
+    isServerStatusOpen ||
+    isEditProfileOpen ||
+    isEditPassportOpen ||
+    isAddCardOpen ||
+    isQrOpen ||
+    isSupportOpen ||
+    cancelBookingTarget ||
+    successBooking ||
+    isTelegramAuthOpen ||
+    (currentTab !== 'search' && !isAdminMode)
+  );
+
+  const handleTelegramBack = useCallback(() => {
+    if (checkoutTour) { setCheckoutTour(null); return; }
+    if (tourDetails) { setTourDetails(null); return; }
+    if (activeVoucherBooking) { setActiveVoucherBooking(null); return; }
+    if (activePriceAlertTour) { setActivePriceAlertTour(null); return; }
+    if (isNotificationsOpen) { setIsNotificationsOpen(false); return; }
+    if (isServerStatusOpen) { setIsServerStatusOpen(false); return; }
+    if (isEditProfileOpen) { setIsEditProfileOpen(false); return; }
+    if (isEditPassportOpen) { setIsEditPassportOpen(false); return; }
+    if (isAddCardOpen) { setIsAddCardOpen(false); return; }
+    if (isQrOpen) { setIsQrOpen(false); return; }
+    if (isSupportOpen) { setIsSupportOpen(false); return; }
+    if (isTelegramAuthOpen) { setIsTelegramAuthOpen(false); return; }
+    if (cancelBookingTarget) { setCancelBookingTarget(null); return; }
+    if (successBooking) { setSuccessBooking(null); return; }
+    if (currentTab !== 'search') { setCurrentTab('search'); return; }
+  }, [
+    checkoutTour,
+    tourDetails,
+    activeVoucherBooking,
+    activePriceAlertTour,
+    isNotificationsOpen,
+    isServerStatusOpen,
+    isEditProfileOpen,
+    isEditPassportOpen,
+    isAddCardOpen,
+    isQrOpen,
+    isSupportOpen,
+    isTelegramAuthOpen,
+    cancelBookingTarget,
+    successBooking,
+    currentTab
+  ]);
+
+  useTelegramBackButton(isBackButtonVisible, handleTelegramBack);
+
+  // Deep Link URL sync for bookingId
+  useEffect(() => {
+    if (typeof window !== 'undefined' && bookings.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const bookingIdParam = urlParams.get('bookingId');
+      if (bookingIdParam) {
+        const target = bookings.find((b) => b.id === bookingIdParam || b.voucherId === bookingIdParam);
+        if (target) {
+          setActiveVoucherBooking(target);
+          setCurrentTab('trips');
+        }
+      }
+    }
+  }, [bookings]);
 
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -439,7 +537,72 @@ export default function App() {
     }, 3200);
   }, []);
 
+  // Telegram Mini App Initialization, Theme sync & Auto Authentication
+  useEffect(() => {
+    expandTelegramApp();
 
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      const tgScheme = window.Telegram.WebApp.colorScheme;
+      if (tgScheme === 'dark' || tgScheme === 'light') {
+        setThemeMode(tgScheme);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam && ['search', 'explore', 'hot', 'trips', 'profile'].includes(tabParam)) {
+        setCurrentTab(tabParam as TabType);
+      }
+    }
+
+    if (isTelegramMiniApp()) {
+      const initData = getTelegramInitData();
+      const existingUserToken = getUserToken();
+      if (initData && !existingUserToken) {
+        fetch('/api/auth/telegram/webapp-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData })
+        })
+          .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Telegram avtorizatsiyasi muvaffaqiyatsiz');
+            return data;
+          })
+          .then((data) => {
+            if (data.token) {
+              try {
+                localStorage.setItem('sayrhub_user_token', data.token);
+                sessionStorage.setItem('sayrhub_user_token', data.token);
+              } catch {}
+            }
+            if (data.user) {
+              const u = data.user;
+              setUser({
+                name: u.name || 'Telegram Mijoz',
+                phone: u.phone || '',
+                email: u.email || '',
+                tcId: u.tcId,
+                cashback: u.cashbackBalance || 30,
+                passportNumber: u.passportNumber || '',
+                passportExpiry: u.passportExpiry || '',
+                dob: u.dob || '',
+                isVerified: true,
+                telegramId: u.telegramId,
+                telegramUsername: u.telegramUsername,
+                favoriteTourIds: Array.isArray(u.favoriteTourIds) ? u.favoriteTourIds : []
+              });
+              showToast(`Xush kelibsiz, ${u.name}! (Telegram Mini App)`, 'success');
+              void fetchBookings();
+            }
+          })
+          .catch((err) => {
+            console.warn('Telegram WebApp auto login attempt:', err?.message || err);
+          });
+      }
+    }
+  }, [getUserToken, fetchBookings, showToast]);
 
   // Theme update
   useEffect(() => {
@@ -447,6 +610,7 @@ export default function App() {
       localStorage.setItem('sayrhub_theme_mode', themeMode);
       localStorage.setItem('travelway_theme_mode', themeMode);
     } catch (e) {}
+    syncTelegramTheme(themeMode === 'dark');
     if (themeMode === 'light') {
       document.documentElement.classList.remove('dark');
       document.documentElement.setAttribute('data-theme', 'light');
@@ -585,6 +749,10 @@ export default function App() {
 
     const newBooking: Booking = {
       id: `b${Date.now()}`,
+      tourId: bookingData.tour.id,
+      adminId: bookingData.tour.adminId,
+      adminUsername: bookingData.tour.adminUsername,
+      adminName: bookingData.tour.adminName,
       tourTitle: bookingData.tour.title,
       dest: bookingData.tour.location,
       dates: formattedDates,
@@ -1087,7 +1255,7 @@ export default function App() {
         onOpenQr={() => setIsQrOpen(true)}
         onToggleNotifs={() => {
           setHasUnreadNotifs(false);
-          showToast("Yangi bildirishnoma: Maldiv va Dubay turlariga 30% chegirmalar!", 'info');
+          setIsNotificationsOpen(true);
         }}
         hasUnreadNotifs={hasUnreadNotifs}
         userInitials={userInitials}
@@ -1231,6 +1399,7 @@ export default function App() {
                   cards={cards}
                   tripsCount={bookings.length}
                   savedCount={savedToursList.length}
+                  alertsCount={priceAlerts.length}
                   currentLang={currentLang}
                   themeMode={themeMode}
                   notificationsEnabled={notificationsEnabled}
@@ -1272,6 +1441,24 @@ export default function App() {
                   onToggleNotifications={() => {
                     setNotificationsEnabled(!notificationsEnabled);
                     showToast(notificationsEnabled ? "Push bildirishnomalar o'chirildi" : "Push bildirishnomalar yoqildi", 'info');
+                  }}
+                  onOpenNotifications={() => setIsNotificationsOpen(true)}
+                  onOpenServerStatus={() => setIsServerStatusOpen(true)}
+                  onOpenPriceAlerts={() => {
+                    if (priceAlerts.length > 0 && tours.length > 0) {
+                      const alertTour = tours.find((t) => t.id === priceAlerts[0].tourId) || tours[0];
+                      setActivePriceAlertTour(alertTour);
+                    } else {
+                      showToast("Hozircha faol narx signallari yo'q. Istalgan tur sahifasida narx signalini yoqing.", 'info');
+                    }
+                  }}
+                  onOpenLogin={() => setIsTelegramAuthOpen(true)}
+                  onOpenAdmin={() => {
+                    if (typeof window !== 'undefined') {
+                      window.history.pushState({}, '', '/admin');
+                    }
+                    setIsAdminMode(true);
+                    void fetchBookings();
                   }}
                   onOpenSupport={() => setIsSupportOpen(true)}
                   onLogout={() => setIsLogoutConfirmOpen(true)}
@@ -1397,6 +1584,33 @@ export default function App() {
             onSuccess={handleTelegramAuthSuccess}
             onShowToast={showToast}
           /></Suspense>}
+
+          {/* Notifications Modal (Mobile Parity) */}
+          {isNotificationsOpen && (
+            <Suspense fallback={null}>
+              <NotificationsModal
+                isOpen={isNotificationsOpen}
+                onClose={() => setIsNotificationsOpen(false)}
+                onSelectAction={(tab) => {
+                  setIsNotificationsOpen(false);
+                  if (tab && ['search', 'explore', 'hot', 'trips', 'profile'].includes(tab)) {
+                    setCurrentTab(tab as TabType);
+                  }
+                }}
+              />
+            </Suspense>
+          )}
+
+          {/* Server & System Status Monitor Modal (Mobile Parity) */}
+          {isServerStatusOpen && (
+            <Suspense fallback={null}>
+              <ServerStatusModal
+                isOpen={isServerStatusOpen}
+                onClose={() => setIsServerStatusOpen(false)}
+                onShowToast={showToast}
+              />
+            </Suspense>
+          )}
 
           {/* In-app Toast Messages Overlay */}
           <div className="fixed top-16 inset-x-4 z-50 pointer-events-none flex flex-col items-center gap-2">

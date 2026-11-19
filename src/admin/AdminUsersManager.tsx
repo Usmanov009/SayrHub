@@ -60,8 +60,8 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
           Mijozlarning shaxsiy pasport ma'lumotlari, telefon raqamlari va moliyaviy hisobotlari
           maxfiy xavfsizlik talablariga ko'ra faqat <b><Crown aria-hidden="true" className="inline h-3.5 w-3.5" /> Bosh Admin</b> tomonidan ko'rilishi mumkin.
         </p>
-        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
-          Yuqori menyudagi rolni "Bosh Admin" ga o'tkazib ushbu bo'limni ko'rishingiz mumkin.
+        <p className="text-xs text-muted-foreground font-semibold">
+          Tur adminlar mijozlar shaxsiy ro‘yxatiga kirish huquqiga ega emas. Ushbu bo‘lim faqat yagona Bosh Admin uchun ochiq.
         </p>
       </div>
     );

@@ -9,6 +9,7 @@ import {
   createTelegramAuthSession,
   checkTelegramAuthSession,
   verifyTelegramCode,
+  authenticateTelegramWebApp,
   processTelegramUpdate,
 } from './telegramBot.js';
 import { startKeepAlive } from './keepAlive.js';
@@ -113,6 +114,19 @@ app.post('/api/auth/telegram/verify-code', async (req, res) => {
   try {
     const { code, sessionToken } = req.body;
     const result = await verifyTelegramCode(code, sessionToken);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/auth/telegram/webapp-login', async (req, res) => {
+  try {
+    const { initData } = req.body || {};
+    const result = await authenticateTelegramWebApp(initData);
+    if (!result.success) {
+      return res.status(401).json(result);
+    }
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
