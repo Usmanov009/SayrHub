@@ -75,15 +75,15 @@ export const HotDealsScreen: React.FC<HotDealsScreenProps> = ({
                   </Badge>
                 )}
                 
-                <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
-                  <div>
-                    <h4 className="text-sm font-bold drop-shadow-xs">{deal.title}</h4>
-                    <p className="text-[11px] text-white/80 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 text-red-400" /> {deal.location}
+                <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-bold drop-shadow-xs truncate">{deal.title}</h4>
+                    <p className="text-[11px] text-white/80 flex items-center gap-1 mt-0.5 truncate">
+                      <MapPin className="w-3 h-3 text-red-400 shrink-0" /> {deal.location}
                     </p>
                   </div>
                   {deal.checkinDate && (
-                    <Badge variant="secondary" className="bg-emerald-500/90 text-white font-bold text-[10px] gap-1">
+                    <Badge variant="secondary" className="bg-emerald-500/90 text-white font-bold text-[10px] gap-1 shrink-0">
                       <Calendar className="w-3 h-3" />
                       {deal.checkinDate}
                     </Badge>
@@ -92,19 +92,19 @@ export const HotDealsScreen: React.FC<HotDealsScreenProps> = ({
               </div>
 
               <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{deal.nights || 'Turpaket'}</span>
-                  <div className="text-right">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground truncate">{deal.nights || 'Turpaket'}</span>
+                  <div className="text-right shrink-0 whitespace-nowrap">
                     {deal.oldPrice && <span className="text-xs line-through text-muted-foreground mr-1.5">{deal.oldPrice}</span>}
                     <span className="text-lg font-black text-primary">{deal.price}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-border text-muted-foreground">
-                  <span className="truncate max-w-[210px] flex items-center gap-1">
-                    <Plane className="w-3.5 h-3.5 text-primary" /> {deal.flight || 'Parvoz tafsilotlari mavjud emas'}
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-border text-muted-foreground gap-2">
+                  <span className="truncate min-w-0 flex-1 flex items-center gap-1">
+                    <Plane className="w-3.5 h-3.5 text-primary shrink-0" /> {deal.flight || 'Parvoz tafsilotlari mavjud emas'}
                   </span>
-                  <span className="font-semibold text-primary">SayrHub</span>
+                  <span className="font-semibold text-primary shrink-0">SayrHub</span>
                 </div>
 
                 {/* Operator & Agency Badges */}

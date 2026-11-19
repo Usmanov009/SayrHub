@@ -645,19 +645,19 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
       </div>
 
       {/* 3. STICKY BOTTOM ACTION BAR (Native Mobile UX) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md bg-card/95 border-t border-border shadow-lg transition-colors">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl sm:text-2xl font-black text-primary leading-none">
+      <div className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md bg-card/95 border-t border-border shadow-lg transition-colors pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+        <div className="max-w-3xl mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xl sm:text-2xl font-black text-primary leading-none whitespace-nowrap">
                 ${finalPackagePrice}
               </span>
-              <span className="text-[10px] text-muted-foreground">
-                ({totalTravelers} kishi uchun)
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                ({totalTravelers} kishi)
               </span>
             </div>
-            <span className="text-[11px] text-muted-foreground font-bold block">
-              Yakuniy narx bron tasdiqlangach ma'lum bo'ladi
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-medium block truncate mt-0.5">
+              Yakuniy narx tasdiqlangach ma'lum bo'ladi
             </span>
           </div>
 
@@ -666,12 +666,12 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
             id="btn-confirm-page-booking"
             disabled={isSubmitting}
             onClick={handleBookingSubmit}
-            className="flex-1 max-w-xs rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider h-12 gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-md shadow-emerald-500/20 active:scale-98 transition"
+            className="shrink-0 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider h-11 sm:h-12 px-4 sm:px-6 gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-md shadow-emerald-500/20 active:scale-98 transition cursor-pointer"
             type="button"
           >
-            <Calendar className="w-4 h-4" />
-            <span>{isSubmitting ? "Bron qilinmoqda..." : "Turni Bron Qilish"}</span>
-            <ChevronRight className="w-4 h-4" />
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span className="truncate">{isSubmitting ? "Bron qilinmoqda..." : "Bron Qilish"}</span>
+            <ChevronRight className="w-4 h-4 shrink-0" />
           </Button>
         </div>
       </div>

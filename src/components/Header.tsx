@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-3 sm:gap-6">
         {/* Left: Brand Logo */}
         <div
-          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none shrink-0 group"
+          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none min-w-0 flex-1 sm:flex-initial group"
           onClick={() => onTabSelect && onTabSelect('search')}
         >
           <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-primary shadow-xs shrink-0 flex items-center justify-center transition-transform group-hover:scale-105">
@@ -67,19 +67,19 @@ export const Header: React.FC<HeaderProps> = ({
               SH
             </span>
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground leading-none">
                 SayrHub
               </h1>
-              <Badge variant="secondary" className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0 h-4">
+              <Badge variant="secondary" className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0 h-4 shrink-0">
                 Travel
               </Badge>
-              <Badge variant="outline" className="hidden sm:inline-flex text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0 h-4">
+              <Badge variant="outline" className="hidden sm:inline-flex text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0 h-4 shrink-0">
                 <CheckCircle2 className="w-2.5 h-2.5 mr-0.5 inline" /> 1:1 Kompas
               </Badge>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight mt-0.5">
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight mt-0.5 truncate max-w-[150px] sm:max-w-none">
               Arzon turpaketlar, charter reyslar & onlayn qidiruv
             </p>
           </div>

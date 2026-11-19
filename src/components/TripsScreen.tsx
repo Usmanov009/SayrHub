@@ -58,10 +58,10 @@ export const TripsScreen: React.FC<TripsScreenProps> = ({
           variant={subTab === 'active' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setSubTab('active')}
-          className="flex-1 rounded-xl text-xs font-bold h-9 gap-1.5 cursor-pointer"
+          className="flex-1 rounded-xl text-xs font-bold h-9 gap-1 sm:gap-1.5 cursor-pointer min-w-0 px-1 sm:px-3"
         >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Faol turlar ({activeBookings.length})</span>
+          <FileText className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Faol ({activeBookings.length})</span>
         </Button>
 
         <Button
@@ -69,10 +69,10 @@ export const TripsScreen: React.FC<TripsScreenProps> = ({
           variant={subTab === 'cancelled' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setSubTab('cancelled')}
-          className="flex-1 rounded-xl text-xs font-bold h-9 gap-1.5 cursor-pointer"
+          className="flex-1 rounded-xl text-xs font-bold h-9 gap-1 sm:gap-1.5 cursor-pointer min-w-0 px-1 sm:px-3"
         >
-          <XCircle className="w-3.5 h-3.5" />
-          <span>Bekor qilingan ({cancelledBookings.length})</span>
+          <XCircle className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Bekor ({cancelledBookings.length})</span>
         </Button>
 
         <Button
@@ -80,10 +80,10 @@ export const TripsScreen: React.FC<TripsScreenProps> = ({
           variant={subTab === 'saved' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setSubTab('saved')}
-          className="flex-1 rounded-xl text-xs font-bold h-9 gap-1.5 cursor-pointer"
+          className="flex-1 rounded-xl text-xs font-bold h-9 gap-1 sm:gap-1.5 cursor-pointer min-w-0 px-1 sm:px-3"
         >
-          <Heart className="w-3.5 h-3.5" />
-          <span>Saqlanganlar ({savedTours.length})</span>
+          <Heart className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Saqlangan ({savedTours.length})</span>
         </Button>
       </div>
 
@@ -110,16 +110,16 @@ export const TripsScreen: React.FC<TripsScreenProps> = ({
               const totalGuests = b.guestsCount || (b.adultsCount ? b.adultsCount + (b.childrenCount || 0) : 1);
               return (
                 <Card key={b.id} className="p-4 space-y-3.5 border-border bg-card shadow-xs">
-                  <div className="flex items-center justify-between pb-2.5 border-b border-border">
-                    <div>
-                      <span className="text-[10px] font-mono text-muted-foreground">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-border gap-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-mono text-muted-foreground block truncate">
                         ID: {b.voucherId}
                       </span>
-                      <h4 className="text-sm font-bold text-foreground">
+                      <h4 className="text-sm font-bold text-foreground truncate">
                         {b.tourTitle}
                       </h4>
                     </div>
-                    <Badge variant="secondary" className="gap-1 font-bold text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+                    <Badge variant="secondary" className="gap-1 font-bold text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shrink-0">
                       <CheckCircle2 className="w-3 h-3" />
                       {b.status}
                     </Badge>

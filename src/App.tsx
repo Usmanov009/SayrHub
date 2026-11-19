@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { lazy, Suspense, useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { TabType, LanguageCode, ThemeMode, TourPackage, Booking, PaymentCard, UserProfile, ToastMessage, PriceAlert, ComboTour, FlightTicket, HotelOnly, ExploreVibe, HotSale } from './types';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -163,6 +163,7 @@ export default function App() {
   });
   const [adminStaffList, setAdminStaffList] = useState<AdminUser[]>([]);
   const [isRefreshingBookings, setIsRefreshingBookings] = useState<boolean>(false);
+  const tgAuthAttemptedRef = useRef(false);
 
   const getAdminToken = useCallback(() => {
     try {
@@ -304,6 +305,7 @@ export default function App() {
     }
   };
 
+  // 1. Decoupled Catalog Load: Runs once on mount (or admin status toggle)
   useEffect(() => {
     let active = true;
     void fetchLiveHotDeals();
@@ -338,6 +340,17 @@ export default function App() {
       console.error('Catalog load from MongoDB failed:', error);
     });
 
+    return () => { active = false; };
+  }, [isAdminAuthenticated]);
+
+  // 2. User Profile, Price Alerts and Bookings Sync: Independent of catalog reload
+  useEffect(() => {
+    let active = true;
+    const userToken = getUserToken();
+    const adminToken = getAdminToken();
+    const token = adminToken || userToken;
+    const headers = token ? { Authorization: 'Bearer ' + token } : undefined;
+
     if (token) {
       void fetchBookings();
       fetch('/api/db/price-alerts', { headers })
@@ -356,7 +369,7 @@ export default function App() {
       fetch('/api/db/users/me', { headers: { Authorization: 'Bearer ' + userToken } })
         .then(async (response) => {
           const data = await response.json();
-          if (!response.ok || !data.success) throw new Error(data.error || 'Profilni olib bo?lmadi.');
+          if (!response.ok || !data.success) throw new Error(data.error || 'Profilni olib bo‘lmadi.');
           if (!active) return;
           const profile = data.user;
           setUser({
@@ -374,7 +387,7 @@ export default function App() {
         .catch((error) => console.error('User profile load from MongoDB failed:', error));
     }
     return () => { active = false; };
-  }, [isAdminAuthenticated, user.tcId]);
+  }, [getUserToken, getAdminToken, fetchBookings]);
 
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
   const [activePriceAlertTour, setActivePriceAlertTour] = useState<TourPackage | null>(null);
@@ -556,10 +569,11 @@ export default function App() {
       }
     }
 
-    if (isTelegramMiniApp()) {
+    if (isTelegramMiniApp() && !tgAuthAttemptedRef.current) {
       const initData = getTelegramInitData();
       const existingUserToken = getUserToken();
       if (initData && !existingUserToken) {
+        tgAuthAttemptedRef.current = true;
         fetch('/api/auth/telegram/webapp-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1135,16 +1149,18 @@ export default function App() {
     }
   };
 
-  const userInitials = (user.name || 'TW')
-    .trim()
-    .split(' ')
-    .filter(Boolean)
-    .map((n) => n[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase() || 'TW';
+  const userInitials = useMemo(() => {
+    return (user.name || 'TW')
+      .trim()
+      .split(' ')
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase() || 'TW';
+  }, [user.name]);
 
-  const savedToursList = tours.filter((t) => t.saved);
+  const savedToursList = useMemo(() => tours.filter((t) => t.saved), [tours]);
   const exploreItems = useMemo(() => {
     const categories: ExploreVibe['vibe'][] = ['beach', 'culture', 'mountain', 'luxury'];
     return categories.flatMap((vibe) => {

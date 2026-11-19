@@ -132,52 +132,52 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-muted-foreground" id="profile-display-phone">
+              <div className="flex items-center gap-2 mt-1 min-w-0">
+                <span className="text-xs text-muted-foreground truncate" id="profile-display-phone">
                   {user.phone || "Telefon kiritilmagan"}
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground/80">
+                <span className="font-mono text-[10px] text-muted-foreground/80 shrink-0">
                   ID: #{user.tcId}
                 </span>
               </div>
 
               {user.telegramUsername && (
-                <div className="flex items-center gap-1 mt-0.5 text-[11px] text-[#229ED9] font-medium">
-                  <Send className="w-3 h-3" />
-                  <span>{user.telegramUsername}</span>
+                <div className="flex items-center gap-1 mt-0.5 text-[11px] text-[#229ED9] font-medium truncate">
+                  <Send className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{user.telegramUsername}</span>
                 </div>
               )}
 
               <div className="flex items-center gap-1.5 mt-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Identifikatsiyadan o'tgan mijoz</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="truncate">Identifikatsiyadan o'tgan mijoz</span>
               </div>
             </div>
           </div>
 
           {/* Quick Metrics (Mobile Parity) */}
-          <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-border text-center">
-            <div className="rounded-xl p-2.5 bg-muted/40 border border-border/80">
-              <p className="text-[10px] text-muted-foreground">Buyurtmalar</p>
-              <p className="text-sm font-bold text-foreground mt-0.5">{tripsCount} ta</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5 pt-4 border-t border-border text-center">
+            <div className="rounded-xl p-2.5 bg-muted/40 border border-border/80 min-w-0">
+              <p className="text-[11px] text-muted-foreground font-medium truncate">Buyurtmalar</p>
+              <p className="text-sm font-bold text-foreground mt-0.5 truncate">{tripsCount} ta</p>
             </div>
-            <div className="rounded-xl p-2.5 bg-muted/40 border border-border/80">
-              <p className="text-[10px] text-muted-foreground">Saqlangan</p>
-              <p className="text-sm font-bold text-foreground mt-0.5">{savedCount} ta</p>
+            <div className="rounded-xl p-2.5 bg-muted/40 border border-border/80 min-w-0">
+              <p className="text-[11px] text-muted-foreground font-medium truncate">Saqlangan</p>
+              <p className="text-sm font-bold text-foreground mt-0.5 truncate">{savedCount} ta</p>
             </div>
             <div
-              className="rounded-xl p-2.5 bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/70 transition-colors"
+              className="rounded-xl p-2.5 bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/70 transition-colors min-w-0"
               onClick={onOpenPriceAlerts}
             >
-              <p className="text-[10px] text-muted-foreground">Signallar</p>
-              <p className="text-sm font-bold text-primary mt-0.5">{alertsCount} ta</p>
+              <p className="text-[11px] text-muted-foreground font-medium truncate">Signallar</p>
+              <p className="text-sm font-bold text-primary mt-0.5 truncate">{alertsCount} ta</p>
             </div>
             <div
-              className="rounded-xl p-2.5 bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/70 transition-colors"
+              className="rounded-xl p-2.5 bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/70 transition-colors min-w-0"
               onClick={() => onShowToast(`Keshbek miqdori: $${user.cashback}. Keyingi bron qilish uchun amal qiladi!`, 'success')}
             >
-              <p className="text-[10px] text-muted-foreground">Keshbek</p>
-              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">${user.cashback}</p>
+              <p className="text-[11px] text-muted-foreground font-medium truncate">Keshbek</p>
+              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 truncate">${user.cashback}</p>
             </div>
           </div>
         </Card>
@@ -449,14 +449,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             onClick={onOpenServerStatus}
             className="w-full justify-between rounded-xl h-12 px-3.5 cursor-pointer bg-muted/40 border-border/80"
           >
-            <div className="flex items-center gap-3 text-left">
-              <Activity className="w-4 h-4 text-primary" />
-              <div>
-                <p className="text-xs font-semibold text-foreground">Server & MongoDB Ulanishi</p>
-                <p className="text-[10px] text-muted-foreground font-normal">Jonli integratsiya va server holati monitori</p>
+            <div className="flex items-center gap-3 text-left min-w-0 flex-1 mr-2">
+              <Activity className="w-4 h-4 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">Server & MongoDB Ulanishi</p>
+                <p className="text-[10px] text-muted-foreground font-normal truncate">Jonli integratsiya va server holati monitori</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               <Badge variant="outline" className="text-[9px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30">
                 Online
               </Badge>
@@ -467,20 +467,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* Notifications Modal & Toggle */}
           <div className="rounded-xl p-3 bg-muted/40 border border-border/80 flex items-center justify-between">
             <div
-              className="flex items-center gap-3 flex-1 cursor-pointer"
+              className="flex items-center gap-3 flex-1 min-w-0 mr-2 cursor-pointer"
               onClick={onOpenNotifications}
             >
-              <Bell className="w-4 h-4 text-primary" />
-              <div>
-                <p className="text-xs font-semibold text-foreground">
+              <Bell className="w-4 h-4 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">
                   Bildirishnomalar
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground truncate">
                   Barcha xabarnomalar va tur yangiliklari
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant={notificationsEnabled ? 'default' : 'outline'}
                 size="sm"
@@ -503,14 +503,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               variant="outline"
               className="w-full justify-between rounded-xl h-12 px-3.5 cursor-pointer bg-muted/40 border-border/80"
             >
-              <div className="flex items-center gap-3 text-left">
-                <Send className="w-4 h-4 text-[#229ED9]" />
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Telegram Operator & Bot</p>
-                  <p className="text-[10px] text-muted-foreground font-normal">@sayrhub_bot • Tezkor yordam</p>
+              <div className="flex items-center gap-3 text-left min-w-0 flex-1 mr-2">
+                <Send className="w-4 h-4 text-[#229ED9] shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">Telegram Operator & Bot</p>
+                  <p className="text-[10px] text-muted-foreground font-normal truncate">@sayrhub_bot • Tezkor yordam</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </Button>
           </a>
 

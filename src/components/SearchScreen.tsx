@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useMemo, useEffect, useCallback } from 'react';
+import React, { lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { TourPackage, PriceAlert, SearchServiceMode, ComboTour, FlightTicket, HotelOnly } from '../types';
 import { ActiveAlertsModal } from './ActiveAlertsModal';
 import { ComboToursView } from './ComboToursView';
@@ -374,12 +374,17 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
     }
   }, [adultsCount, childrenCount, countryCode, selectedResort, departureCity, searchQuery, nightsFilter, onShowToast]);
 
-  // Initial load live fetch
-  useEffect(() => {
-    executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, adultsCount, childrenCount);
-  }, [countryCode]);
+  const hasMountedLiveSearchRef = useRef(false);
 
-  // Handle Country Change
+  // Initial load live fetch: runs once on initial mount
+  useEffect(() => {
+    if (!hasMountedLiveSearchRef.current) {
+      hasMountedLiveSearchRef.current = true;
+      executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, adultsCount, childrenCount);
+    }
+  }, [countryCode, selectedResort, departureCity, searchQuery, nightsFilter, adultsCount, childrenCount, executeLiveSearch]);
+
+  // Handle Country Change: triggers exactly one live search on user selection
   const handleCountryChange = (newCode: string) => {
     setCountryCode(newCode);
     setSelectedResort('Barcha kurortlar');
@@ -650,7 +655,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
       </section>
 
       {/* SERVICE MODE TABS: Turpaketlar | Combo Turlar | Aviabiletlar | Mehmonxonalar */}
-      <div className="grid grid-cols-4 gap-1.5 p-1.5 rounded-2xl border border-border bg-muted/60 shadow-xs">
+      <div className="grid grid-cols-4 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl border border-border bg-muted/60 shadow-xs">
         <Button
           type="button"
           id="tab-mode-tours"
@@ -659,10 +664,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             hapticSelection();
             setServiceMode('tours');
           }}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
+          className="h-auto py-1.5 sm:py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer min-w-0"
         >
-          <Waves className="size-4" />
-          <span className="text-[10px] leading-tight font-bold">Turpaketlar</span>
+          <Waves className="size-3.5 sm:size-4 shrink-0" />
+          <span className="text-[10px] leading-tight font-bold truncate w-full text-center">Turpaketlar</span>
         </Button>
 
         <Button
@@ -673,10 +678,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             hapticSelection();
             setServiceMode('combo');
           }}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
+          className="h-auto py-1.5 sm:py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer min-w-0"
         >
-          <RotateCw className="size-4" />
-          <span className="text-[10px] leading-tight font-bold">Combo</span>
+          <RotateCw className="size-3.5 sm:size-4 shrink-0" />
+          <span className="text-[10px] leading-tight font-bold truncate w-full text-center">Combo</span>
         </Button>
 
         <Button
@@ -687,10 +692,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             hapticSelection();
             setServiceMode('flights');
           }}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
+          className="h-auto py-1.5 sm:py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer min-w-0"
         >
-          <Plane className="size-4" />
-          <span className="text-[10px] leading-tight font-bold">Biletlar</span>
+          <Plane className="size-3.5 sm:size-4 shrink-0" />
+          <span className="text-[10px] leading-tight font-bold truncate w-full text-center">Biletlar</span>
         </Button>
 
         <Button
@@ -701,10 +706,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             hapticSelection();
             setServiceMode('hotels');
           }}
-          className="h-auto py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer"
+          className="h-auto py-1.5 sm:py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer min-w-0"
         >
-          <Hotel className="size-4" />
-          <span className="text-[10px] leading-tight font-bold">Mehmonxona</span>
+          <Hotel className="size-3.5 sm:size-4 shrink-0" />
+          <span className="text-[10px] leading-tight font-bold truncate w-full text-center">Mehmonxona</span>
         </Button>
       </div>
 
@@ -992,76 +997,117 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
 
             {/* Туристы (Sayyohlar) */}
             <div
-              className="p-2.5 rounded-2xl border transition-colors"
+              className="p-2.5 rounded-2xl border transition-colors overflow-hidden"
               style={{
                 backgroundColor: 'var(--tw-subtle)',
                 borderColor: 'var(--tw-border)'
               }}
             >
               <label
-                className="text-[10px] block font-semibold mb-0.5"
+                className="text-[10px] block font-semibold mb-0.5 truncate"
                 style={{ color: 'var(--tw-text-sub)' }}
               >
-                <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> Sayyohlar (Туристы)</span>
+                <span className="inline-flex items-center gap-1"><Users className="w-3 h-3 shrink-0" /> Sayyohlar (Туристы)</span>
               </label>
-              <div className="flex items-center justify-between pt-0.5">
-                <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between gap-1 pt-0.5 min-w-0">
+                {/* Kattalar */}
+                <div className="flex items-center gap-1 min-w-0">
                   <span
-                    className="text-[11px] font-bold"
+                    className="text-[11px] font-bold truncate"
                     style={{ color: 'var(--tw-text-main)' }}
+                    title={`${adultsCount} kattalar`}
                   >
-                    {adultsCount} kattalar
+                    {adultsCount} katta
                   </span>
-                  <div className="flex items-center gap-0.5 ml-1">
-                    {[1, 2, 3, 4].map((num) => (
-                      <button
-                        key={num}
-                        type="button"
-                        onClick={() => {
-                          setAdultsCount(num);
-                          executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, num, childrenCount);
-                        }}
-                        className={`w-5 h-5 rounded text-[10px] font-bold tap-bounce transition ${
-                          adultsCount === num ? 'shadow-xs' : ''
-                        }`}
-                        style={{
-                          backgroundColor: adultsCount === num ? 'var(--tw-accent)' : 'var(--tw-surface)',
-                          color: adultsCount === num ? 'var(--tw-accent-contrast)' : 'var(--tw-text-muted)'
-                        }}
-                      >
-                        {num}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      disabled={adultsCount <= 1}
+                      onClick={() => {
+                        const next = Math.max(1, adultsCount - 1);
+                        setAdultsCount(next);
+                        executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, next, childrenCount);
+                      }}
+                      className="w-5 h-5 rounded flex items-center justify-center text-xs font-black tap-bounce transition disabled:opacity-30 cursor-pointer"
+                      style={{
+                        backgroundColor: 'var(--tw-surface)',
+                        color: 'var(--tw-text-main)'
+                      }}
+                      title="1 kattaga kamaytirish"
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      disabled={adultsCount >= 8}
+                      onClick={() => {
+                        const next = Math.min(8, adultsCount + 1);
+                        setAdultsCount(next);
+                        executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, next, childrenCount);
+                      }}
+                      className="w-5 h-5 rounded flex items-center justify-center text-xs font-black tap-bounce transition disabled:opacity-30 cursor-pointer"
+                      style={{
+                        backgroundColor: 'var(--tw-surface)',
+                        color: 'var(--tw-text-main)'
+                      }}
+                      title="1 kattaga oshirish"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
+                {/* Vertical Divider */}
                 <div
-                  className="flex items-center gap-1 border-l pl-2"
-                  style={{ borderColor: 'var(--tw-border)' }}
-                >
+                  className="h-4 w-px shrink-0"
+                  style={{ backgroundColor: 'var(--tw-border)' }}
+                />
+
+                {/* Bolalar */}
+                <div className="flex items-center gap-1 min-w-0">
                   <span
-                    className="text-[10px]"
+                    className="text-[11px] font-bold truncate"
                     style={{ color: 'var(--tw-text-sub)' }}
+                    title={`${childrenCount} bolalar`}
                   >
-                    bola:
+                    {childrenCount} bola
                   </span>
-                  {[0, 1, 2].map((num) => (
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <button
-                      key={num}
                       type="button"
+                      disabled={childrenCount <= 0}
                       onClick={() => {
-                        setChildrenCount(num);
-                        executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, adultsCount, num);
+                        const next = Math.max(0, childrenCount - 1);
+                        setChildrenCount(next);
+                        executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, adultsCount, next);
                       }}
-                      className="w-4 h-4 rounded text-[9px] font-bold tap-bounce"
+                      className="w-5 h-5 rounded flex items-center justify-center text-xs font-black tap-bounce transition disabled:opacity-30 cursor-pointer"
                       style={{
-                        backgroundColor: childrenCount === num ? 'var(--tw-accent)' : 'var(--tw-surface)',
-                        color: childrenCount === num ? 'var(--tw-accent-contrast)' : 'var(--tw-text-muted)'
+                        backgroundColor: 'var(--tw-surface)',
+                        color: 'var(--tw-text-main)'
                       }}
+                      title="1 bolaga kamaytirish"
                     >
-                      {num}
+                      -
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      disabled={childrenCount >= 6}
+                      onClick={() => {
+                        const next = Math.min(6, childrenCount + 1);
+                        setChildrenCount(next);
+                        executeLiveSearch(countryCode, selectedResort, departureCity, searchQuery, nightsFilter, adultsCount, next);
+                      }}
+                      className="w-5 h-5 rounded flex items-center justify-center text-xs font-black tap-bounce transition disabled:opacity-30 cursor-pointer"
+                      style={{
+                        backgroundColor: 'var(--tw-surface)',
+                        color: 'var(--tw-text-main)'
+                      }}
+                      title="1 bolaga oshirish"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1431,10 +1477,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
 
                     {/* Rating & Nights on banner */}
                     <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-amber-300 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-amber-300 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
                         ★ {tour.rating} ({tour.hotelStars || '5★'})
                       </span>
-                      <span className="text-[10px] text-white bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-md">
+                      <span className="text-[10px] text-white bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-md shrink-0">
                         <span className="inline-flex items-center gap-1"><Moon className="w-3 h-3" /> {tour.nights}</span>
                       </span>
                     </div>
@@ -1442,52 +1488,53 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
 
                   {/* Card Body */}
                   <div className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className="text-sm font-bold leading-tight text-foreground">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-bold leading-tight text-foreground line-clamp-2">
                           {tour.title}
                         </h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {tour.location}</span>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" /> {tour.location}</span>
                         </p>
                         {tour.roomType && (
-                          <p className="text-xs font-semibold text-primary mt-0.5">
-                            <span className="inline-flex items-center gap-1"><BedDouble className="w-3 h-3" /> {tour.roomType}</span>
+                          <p className="text-xs font-semibold text-primary mt-0.5 truncate">
+                            <span className="inline-flex items-center gap-1"><BedDouble className="w-3 h-3 shrink-0" /> {tour.roomType}</span>
                           </p>
                         )}
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         {tour.oldPrice && (
                           <span className="text-xs line-through text-muted-foreground mr-1">
                             {formatPrice(tour.oldPrice)}
                           </span>
                         )}
-                        <p className="text-lg font-black text-primary leading-none">
+                        <p className="text-base sm:text-lg font-black text-primary leading-none whitespace-nowrap">
                           {formatPrice(tour.price)}
                         </p>
-                        <span className="text-[10px] block mt-0.5 font-medium text-muted-foreground">
+                        <span className="text-[10px] block mt-0.5 font-medium text-muted-foreground whitespace-nowrap">
                           {totalTravelers > 1
-                            ? `${formatPrice(tour.price * totalTravelers)} jami (${totalTravelers} kishi)`
+                            ? `${formatPrice(tour.price * totalTravelers)} jami`
                             : "1 kishi uchun to'liq narx"}
                         </span>
-
                       </div>
                     </div>
 
                     {/* Flight & Inclusions bar */}
-                    <div className="p-2.5 rounded-xl border border-border bg-muted/40 flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1.5 truncate max-w-[210px]">
-                        <Plane className="w-3.5 h-3.5 shrink-0" />
+                    <div className="p-2.5 rounded-xl border border-border bg-muted/40 flex items-center justify-between text-xs text-muted-foreground gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <Plane className="w-3.5 h-3.5 shrink-0 text-primary" />
                         <span className="truncate font-medium">{tour.flight}</span>
                       </div>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold shrink-0">Transfer ✓ Sug'urta ✓</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold shrink-0 text-[11px] whitespace-nowrap">
+                        Transfer ✓ Sug'urta ✓
+                      </span>
                     </div>
 
                     {/* Agency Trust Info */}
                     <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-semibold">
-                      <Building2 className="w-3.5 h-3.5" />
-                      <span>SayrHub</span>
-                      <span className="text-sky-400 dark:text-sky-500 ml-auto shrink-0">✓ Rasmiy Operator</span>
+                      <Building2 className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">SayrHub</span>
+                      <span className="text-sky-400 dark:text-sky-500 ml-auto shrink-0 text-[10px]">✓ Rasmiy Operator</span>
                     </div>
                   </div>
                 </div>

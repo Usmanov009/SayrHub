@@ -92,12 +92,12 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
                 {item.badge}
               </Badge>
 
-              <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
-                <div>
-                  <h4 className="text-base font-bold leading-tight drop-shadow-xs">{item.title}</h4>
-                  <p className="text-xs text-white/80 mt-0.5">{item.count}</p>
+              <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white gap-2">
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base font-bold leading-tight drop-shadow-xs truncate">{item.title}</h4>
+                  <p className="text-xs text-white/80 mt-0.5 truncate">{item.count}</p>
                 </div>
-                <div className="text-right bg-black/60 px-2.5 py-1.5 rounded-xl backdrop-blur-md border border-white/10">
+                <div className="text-right bg-black/60 px-2.5 py-1.5 rounded-xl backdrop-blur-md border border-white/10 shrink-0">
                   <span className="text-[10px] text-white/70 block font-medium">Boshlang'ich</span>
                   <span className="text-sm font-black text-primary">{item.priceFrom}</span>
                 </div>
