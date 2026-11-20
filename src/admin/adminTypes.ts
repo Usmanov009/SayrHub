@@ -22,6 +22,11 @@ export interface AdminUser {
   createdAt: string;
   lastActive: string;
   status: 'active' | 'suspended';
+  taxRate?: number;
+  statsResetAt?: string;
+  revenue?: number;
+  toursSold?: number;
+  tax?: number;
 }
 
 export type AdminTab = 
@@ -51,9 +56,9 @@ export interface AdminStats {
 }
 
 /**
- * 3% Platform Commission percentage paid to Bosh Admin by Tour Admins
+ * 2% Tax percentage paid to Bosh Admin by Tour Admins
  */
-export const TOUR_ADMIN_COMMISSION_PERCENT = 3;
+export const TOUR_ADMIN_COMMISSION_PERCENT = 2;
 
 export function calculateTourAdminFinancials(grossRevenue: number) {
   const commissionFee = Math.round(grossRevenue * (TOUR_ADMIN_COMMISSION_PERCENT / 100));
@@ -61,8 +66,8 @@ export function calculateTourAdminFinancials(grossRevenue: number) {
   return {
     grossRevenue,
     commissionPercent: TOUR_ADMIN_COMMISSION_PERCENT,
-    commissionFee, // Bosh adminga 3% to'lanadigan pul
-    netRevenue,    // Tur adminning 97% sof daromadi
+    commissionFee, // Bosh adminga 2% to'lanadigan pul
+    netRevenue,    // Tur adminning 98% sof daromadi
   };
 }
 

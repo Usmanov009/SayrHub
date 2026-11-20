@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/tour_package.dart';
 import '../models/booking.dart';
-import '../models/payment_card.dart';
 import '../services/api_service.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_theme.dart';
@@ -56,9 +55,7 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
   final List<TextEditingController> _extraPassportControllers = [];
 
   // Payment state
-  String _selectedPayment = 'Payme';
-  List<PaymentCard> _savedCards = [];
-  String? _selectedCardId;
+  String _selectedPayment = 'Cash';
 
   bool _isLoadingSavedData = true;
   bool _isSubmitting = false;
@@ -108,19 +105,6 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
       }
       if (savedPassport != null && savedPassport.isNotEmpty) {
         _passportController.text = savedPassport;
-      }
-
-      // Load saved payment cards
-      final cardsRaw = prefs.getString('sayrhub_user_payment_cards');
-      if (cardsRaw != null && cardsRaw.isNotEmpty) {
-        final cards = PaymentCard.decodeList(cardsRaw);
-        _savedCards = cards;
-        final primary = cards.where((c) => c.isPrimary).firstOrNull;
-        if (primary != null) {
-          _selectedCardId = primary.id;
-        } else if (cards.isNotEmpty) {
-          _selectedCardId = cards.first.id;
-        }
       }
     } catch (_) {}
 
@@ -189,6 +173,18 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
   }
 
   Future<void> _submitBooking() async {
+    if (_selectedPayment == 'Card') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Karta orqali to\'lov hozircha mavjud emas. Naqd to\'lovni tanlang.',
+          ),
+          backgroundColor: AppTheme.accentRed,
+        ),
+      );
+      return;
+    }
+
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
     final passport = _normalizePassport(_passportController.text);
@@ -1301,26 +1297,16 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
   // 6. To'lov Usullari
   Widget _buildPaymentMethodsSection() {
     final paymentMethods = [
-      {'id': 'Payme', 'name': 'Payme', 'icon': FlaticonIcons.creditCard},
-      {'id': 'Click', 'name': 'Click Up', 'icon': FlaticonIcons.creditCard},
       {
-        'id': 'Uzum Bank',
-        'name': 'Uzum Bank',
-        'icon': FlaticonIcons.accountBalance,
-      },
-      {
-        'id': 'Humo/Uzcard',
-        'name': 'Humo / Uzcard',
-        'icon': FlaticonIcons.creditCard,
-      },
-      {
-        'id': 'Visa',
-        'name': 'Visa / Mastercard',
+        'id': 'Card',
+        'name': 'Karta',
+        'sub': 'Hozircha mavjud emas',
         'icon': FlaticonIcons.creditCard,
       },
       {
         'id': 'Cash',
-        'name': 'Ofisda naqd',
+        'name': 'Naqd',
+        'sub': 'Ofisda to\'lanadi',
         'icon': FlaticonIcons.paymentsOutlined,
       },
     ];
@@ -1352,19 +1338,24 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
             runSpacing: 8,
             children: paymentMethods.map((m) {
               final isSelected = _selectedPayment == m['id'];
+              final isEnabled = m['id'] != 'Card';
               return GestureDetector(
-                onTap: () =>
-                    setState(() => _selectedPayment = m['id'] as String),
+                onTap: isEnabled
+                    ? () =>
+                        setState(() => _selectedPayment = m['id'] as String)
+                    : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.primary : AppTheme.subtleDark,
+                    color: !isEnabled
+                        ? AppTheme.subtleDark
+                        : (isSelected ? AppTheme.primary : AppTheme.subtleDark),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected
+                      color: isSelected && isEnabled
                           ? AppTheme.primary
                           : AppTheme.borderDark,
                     ),
@@ -1375,16 +1366,39 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
                       Icon(
                         m['icon'] as IconData,
                         size: 14,
-                        color: isSelected ? Colors.white : AppTheme.textSub,
+                        color: !isEnabled
+                            ? AppTheme.textMuted
+                            : (isSelected ? Colors.white : AppTheme.textSub),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        m['name'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : AppTheme.textMain,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            m['name'] as String,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: !isEnabled
+                                  ? AppTheme.textMuted
+                                  : (isSelected
+                                      ? Colors.white
+                                      : AppTheme.textMain),
+                            ),
+                          ),
+                          Text(
+                            m['sub'] as String,
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: !isEnabled
+                                  ? AppTheme.textMuted
+                                  : (isSelected
+                                      ? Colors.white70
+                                      : AppTheme.textSub),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1393,82 +1407,12 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
             }).toList(),
           ),
 
-          if (_savedCards.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Divider(color: AppTheme.borderDark),
-            const SizedBox(height: 6),
-            const Text(
-              'Saqlangan to\'lov kartalaringiz:',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textSub,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 48,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _savedCards.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, idx) {
-                  final card = _savedCards[idx];
-                  final isCardSel = _selectedCardId == card.id;
+          const SizedBox(height: 6),
+          const Text(
+            'Karta orqali to\'lov vaqtincha mavjud emas. Hozircha faqat naqd to\'lov qabul qilinadi.',
+            style: TextStyle(fontSize: 10, color: AppTheme.textSub),
+          ),
 
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCardId = card.id;
-                        _selectedPayment = card.type;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isCardSel
-                            ? AppTheme.primary.withOpacity(0.12)
-                            : AppTheme.subtleDark,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isCardSel
-                              ? AppTheme.primary
-                              : AppTheme.borderDark,
-                          width: isCardSel ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            FlaticonIcons.creditCard,
-                            size: 16,
-                            color: isCardSel
-                                ? AppTheme.primary
-                                : AppTheme.textSub,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${card.type} •••• ${card.last4}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isCardSel
-                                  ? AppTheme.primary
-                                  : AppTheme.textMain,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
         ],
       ),
     );

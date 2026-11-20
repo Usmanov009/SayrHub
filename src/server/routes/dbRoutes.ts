@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import {
+  AdminStaffModel,
   BookingModel,
   CatalogItemModel,
   getDBStatus,
@@ -218,8 +219,52 @@ router.post('/bookings', optionalAuth, requireDatabase, async (req: AuthRequest,
     // Strip client-sent _id and __v to prevent Mongoose CastError on ObjectId
     const { _id: _ignoredId, __v: _ignoredVersion, ...cleanBooking } = booking;
 
+    // Attribute the booking to the tour company (tour admin) that owns the tour.
+    let adminId: string | undefined = cleanBooking.adminId;
+    let adminName: string | undefined = cleanBooking.adminName;
+    let adminUsername: string | undefined = cleanBooking.adminUsername;
+    if (!adminId && booking.tourId) {
+      try {
+        const tour = await TourModel.findOne({ id: String(booking.tourId) }).lean();
+        if (tour) {
+          adminId = adminId || (tour as any).adminId;
+          adminName = adminName || (tour as any).adminName;
+          adminUsername = adminUsername || (tour as any).adminUsername;
+        }
+      } catch {
+        // ignore lookup errors; booking still saved
+      }
+    }
+    if (!adminId && booking.tourTitle) {
+      try {
+        const tour = await TourModel.findOne({ title: String(booking.tourTitle) }).lean();
+        if (tour) {
+          adminId = adminId || (tour as any).adminId;
+          adminName = adminName || (tour as any).adminName;
+          adminUsername = adminUsername || (tour as any).adminUsername;
+        }
+      } catch {
+        // ignore lookup errors; booking still saved
+      }
+    }
+    if (!adminId && adminName) {
+      try {
+        const staff = await AdminStaffModel.findOne({ name: adminName }).lean();
+        if (staff) {
+          adminId = (staff as any).id;
+          adminUsername = adminUsername || (staff as any).username;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     const bookingPayload = {
       ...cleanBooking,
+      adminId,
+      adminName,
+      adminUsername,
+      paymentType: booking.paymentType || booking.payType,
       travelerId,
       travelerPhone,
       travelerPassport,

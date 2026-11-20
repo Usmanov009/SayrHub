@@ -255,7 +255,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {isOtpOpen && (
         <div
           id="otp-modal"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-end p-0"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-end p-0"
         >
           <div
             className="border-t rounded-t-[32px] p-5 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto"
@@ -365,7 +365,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {socialProvider && (
         <div
           id="social-modal"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-end p-0"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-end p-0"
         >
           <div
             className="border-t rounded-t-[32px] p-5 space-y-4 shadow-2xl"
@@ -419,7 +419,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {tourDetails && (
         <div
           id="modal-tour-details"
-          className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
         >
           <div
             className="border-t rounded-t-[32px] p-5 max-h-[85vh] overflow-y-auto no-scrollbar space-y-4 shadow-2xl"
@@ -565,7 +565,7 @@ export const Modals: React.FC<ModalsProps> = ({
                   Bronlash Agentligi
                 </span>
                 <span className="font-black text-emerald-600 dark:text-emerald-400">
-                  <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {tourDetails.agencyName || 'SayrHub Agentligi'}</span>
+                  <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {tourDetails.agencyName || tourDetails.adminName || 'Tur kompaniyasi'}</span>
                 </span>
               </div>
             </div>
@@ -670,7 +670,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {checkoutTour && (
         <div
           id="modal-checkout"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col justify-end"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col justify-end"
         >
           <div
             className="border-t rounded-t-[32px] p-5 max-h-[92vh] overflow-y-auto no-scrollbar space-y-4 shadow-2xl animate-slideUp"
@@ -1102,7 +1102,7 @@ export const Modals: React.FC<ModalsProps> = ({
                     <div className="flex justify-between items-center text-xs">
                       <span className="inline-flex items-center gap-1" style={{ color: 'var(--tw-text-sub)' }}><ShieldCheck className="w-3 h-3" /> Bronlash Agentligi:</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {checkoutTour.agencyName || 'SayrHub Agentligi'}
+                        {checkoutTour.agencyName || checkoutTour.adminName || 'Tur kompaniyasi'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs text-cyan-600 dark:text-cyan-400">
@@ -1236,7 +1236,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {successBooking && (
         <div
           id="modal-booking-success"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
         >
           <div
             className="border rounded-3xl p-5 max-w-[340px] w-full space-y-3.5 text-center shadow-2xl animate-scaleUp"
@@ -1325,7 +1325,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {isQrOpen && (
         <div
           id="modal-qr"
-          className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <div
             className="border rounded-3xl p-6 text-center max-w-[320px] w-full space-y-3.5 shadow-2xl animate-scaleUp"
@@ -1369,7 +1369,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {isSupportOpen && (
         <div
           id="support-modal"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-end p-0"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-end p-0"
         >
           <div
             className="border-t rounded-t-[32px] p-5 space-y-3.5 shadow-2xl"
@@ -1452,7 +1452,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {isEditProfileOpen && (
         <div
           id="modal-edit-profile"
-          className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
         >
           <div
             className="border-t rounded-t-[32px] p-5 space-y-3.5 shadow-2xl"
@@ -1528,7 +1528,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {isAddCardOpen && (
         <div
           id="modal-add-card"
-          className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
         >
           <div
             className="border-t rounded-t-[32px] p-5 space-y-3.5 shadow-2xl"
@@ -1635,7 +1635,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {activeVoucherBooking && (
         <div
           id="modal-voucher-preview"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
         >
           <div
             className="border rounded-3xl p-5 max-w-[340px] w-full space-y-3.5 shadow-2xl text-left"
@@ -1763,7 +1763,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {cancelBookingTarget && (
         <div
           id="modal-cancel-booking"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
         >
           <div
             className="border rounded-3xl p-5 max-w-[340px] w-full space-y-3.5 text-center shadow-2xl animate-scaleUp"
@@ -1865,7 +1865,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {isEditPassportOpen && (
         <div
           id="modal-edit-passport"
-          className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col justify-end"
         >
           <div
             className="border-t rounded-t-[32px] p-5 space-y-3.5 shadow-2xl"
@@ -1952,7 +1952,7 @@ export const Modals: React.FC<ModalsProps> = ({
       {isLogoutConfirmOpen && (
         <div
           id="modal-logout-confirm"
-          className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
         >
           <div
             className="border rounded-3xl p-5 max-w-[320px] w-full space-y-3.5 text-center shadow-2xl animate-scaleUp"

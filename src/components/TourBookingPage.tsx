@@ -82,6 +82,8 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
   const [leadPhone, setLeadPhone] = useState<string>(currentPhone || '+998 ');
   const [leadPassport, setLeadPassport] = useState<string>(currentPassport || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  // Payment method: card is not available yet, only cash works.
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
 
   useEffect(() => {
     if (currentName && !leadName) setLeadName(currentName);
@@ -108,6 +110,12 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
       return;
     }
 
+    if (paymentMethod === 'card') {
+      hapticError();
+      onShowToast("Karta orqali to'lov hozircha mavjud emas. Naqd to'lovni tanlang.", 'error');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -117,7 +125,7 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
         phone: leadPhone.trim(),
         passport: leadPassport.trim(),
         dob: '',
-        payType: 'online_booking',
+        payType: paymentMethod,
         discount: 0,
         travelersCount: totalTravelers,
         adultsCount,
@@ -522,7 +530,69 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
           </CardContent>
         </Card>
 
-        {/* 5. TRANSPARENT PRICE CALCULATION CARD */}
+        {/* 5. PAYMENT METHOD SELECTION */}
+        <Card className="rounded-2xl border-border bg-card shadow-xs">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <CreditCard className="w-4 h-4" />
+              </div>
+              <div>
+                <CardTitle className="text-sm font-bold text-card-foreground">
+                  To'lov usuli
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Bron qilish uchun to'lov usulini tanlang
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-2 pt-0">
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                disabled
+                className="flex items-center gap-2 p-3 rounded-xl border border-border bg-muted/40 opacity-60 cursor-not-allowed text-left"
+              >
+                <CreditCard className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="min-w-0">
+                  <span className="block text-xs font-bold text-muted-foreground">Karta</span>
+                  <span className="block text-[10px] text-muted-foreground">Hozircha mavjud emas</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentMethod('cash');
+                  hapticSelection();
+                }}
+                className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all tap-bounce ${
+                  paymentMethod === 'cash'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                    : 'border-border bg-muted/40 hover:bg-muted'
+                }`}
+              >
+                <CheckCircle2
+                  className={`w-4 h-4 shrink-0 ${
+                    paymentMethod === 'cash' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                />
+                <span className="min-w-0">
+                  <span className="block text-xs font-bold text-card-foreground">Naqd</span>
+                  <span className="block text-[10px] text-muted-foreground">Ofisda to'lanadi</span>
+                </span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground">
+              Karta orqali to'lov vaqtincha mavjud emas. Hozircha faqat naqd to'lov qabul qilinadi.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* 6. TRANSPARENT PRICE CALCULATION CARD */}
         <Card className="rounded-2xl border-border bg-card shadow-xs">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">

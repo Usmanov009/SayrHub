@@ -13,6 +13,7 @@ interface AdminStaffManagerProps {
   onAddStaff: (staff: AdminUser) => Promise<void>;
   onUpdateStaff: (staff: AdminUser) => Promise<void>;
   onRemoveStaff: (staffId: string) => Promise<void>;
+  onResetStaffStats?: (staffId: string) => Promise<void>;
   onShowToast: (text: string, type?: 'success' | 'error' | 'info') => void;
   globalSearch?: string;
 }
@@ -26,6 +27,7 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
   onAddStaff,
   onUpdateStaff,
   onRemoveStaff,
+  onResetStaffStats,
   onShowToast,
   globalSearch = ''
 }) => {
@@ -170,6 +172,22 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
     }
   };
 
+  const handleResetStats = async (staff: AdminUser) => {
+    if (!onResetStaffStats) {
+      onShowToast('Statistikani nollash funksiyasi mavjud emas.', 'error');
+      return;
+    }
+    if (!confirm(`"${staff.name}" tur kompaniyasining daromadi, sotilgan turlari va solig'ini 0 ga tushirmoqchimisiz?`)) {
+      return;
+    }
+    try {
+      await onResetStaffStats(staff.id);
+      onShowToast(`"${staff.name}" statistikasi nollandi.`, 'success');
+    } catch (error) {
+      onShowToast(error instanceof Error ? error.message : 'Statistikani nollab bo‘lmadi.', 'error');
+    }
+  };
+
   const effectiveSearch = (search || globalSearch).trim().toLowerCase();
 
   const filteredStaff = staffList.filter(s =>
@@ -186,10 +204,10 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <ShieldCheck aria-hidden="true" className="h-5 w-5 text-indigo-600" />
-            Tur Adminlar Boshqaruvi ({staffList.length})
+            Tur Kompaniyalari (Tur Adminlar) ({staffList.length})
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Tizimdagi Tur Adminlarni boshqarish, yangi tur admin ochish va o‘chirish bo‘limi
+            Tur kompaniyalari profillari: daromad, sotilgan turlar, 2% soliq va boshqaruv
           </p>
         </div>
 
@@ -209,12 +227,12 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
           <div className="space-y-0.5">
             <span className="font-bold">Yagona Bosh Admin qoidasi:</span>
             <p className="text-muted-foreground dark:text-amber-300/80">
-              Tizimda faqat bitta Bosh Admin bo‘ladi. Tur Adminlar o‘z daromadining 3% qismini Bosh Adminga to‘laydi va mijozlar shaxsiy ro‘yxatiga (users) kirish huquqiga ega bo‘lmaydi.
+              Tizimda faqat bitta Bosh Admin bo‘ladi. Tur kompaniyalari (tur adminlar) o‘z daromadidan 2% soliq to‘laydi va mijozlar shaxsiy ro‘yxatiga (users) kirish huquqiga ega bo‘lmaydi.
             </p>
           </div>
         </div>
         <Badge variant="outline" className="shrink-0 bg-amber-100/60 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
-          3% Komissiya Tizimi
+          2% Soliq Tizimi
         </Badge>
       </div>
 
@@ -299,7 +317,7 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
                           </>
                         ) : (
                           <>
-                            <Briefcase aria-hidden="true" className="h-3 w-3" /> Tur Admin (3% to‘lov)
+                            <Briefcase aria-hidden="true" className="h-3 w-3" /> Tur kompaniyasi (2% soliq)
                           </>
                         )}
                       </span>
@@ -336,6 +354,30 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Financial stats (revenue, tours sold, 2% tax) */}
+                {!isMain && (
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/50">
+                      <p className="text-[9px] font-semibold text-muted-foreground">Daromad</p>
+                      <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        ${staff.revenue ?? 0}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-xl bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200/70 dark:border-sky-800/50">
+                      <p className="text-[9px] font-semibold text-muted-foreground">Sotilgan tur</p>
+                      <p className="text-sm font-black text-sky-600 dark:text-sky-400 font-mono">
+                        {staff.toursSold ?? 0}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50">
+                      <p className="text-[9px] font-semibold text-muted-foreground">Soliq ({staff.taxRate ?? 2}%)</p>
+                      <p className="text-sm font-black text-amber-600 dark:text-amber-400 font-mono">
+                        ${staff.tax ?? 0}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Login metadata */}
                 <div className="p-3 rounded-xl bg-muted/50 border border-border space-y-2 text-xs">
@@ -374,19 +416,30 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
 
                 {/* Card Action: Delete Button for Tour Admins */}
                 {!isMain && (
-                  <div className="pt-1 flex items-center justify-between border-t border-border">
+                  <div className="pt-1 flex items-center justify-between border-t border-border gap-2">
                     <span className="text-[11px] text-muted-foreground">
-                      Daromatdan 3% to‘lov majburiy
+                      Daromaddan 2% soliq
                     </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteStaff(staff)}
-                      className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:border-destructive/30 gap-1 px-2.5"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">delete</span>
-                      <span>O‘chirish</span>
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleResetStats(staff)}
+                        className="h-7 text-xs gap-1 px-2.5"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">restart_alt</span>
+                        <span>Nollash</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteStaff(staff)}
+                        className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:border-destructive/30 gap-1 px-2.5"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                        <span>O‘chirish</span>
+                      </Button>
+                    </div>
                   </div>
                 )}
               </Card>
@@ -416,7 +469,7 @@ export const AdminStaffManager: React.FC<AdminStaffManagerProps> = ({
               <p className="font-bold">Tur Admin huquqlari va shartlari:</p>
               <ul className="list-disc list-inside space-y-0.5 text-[11px] text-muted-foreground dark:text-indigo-300/80">
                 <li>O‘z turlarini kiritish va o‘z buyurtmalarini boshqarish.</li>
-                <li><b>O‘z daromadidan 3% komissiya Bosh Adminga to‘lanadi</b> (97% sof foyda tur adminda qoladi).</li>
+                <li><b>O‘z daromadidan 2% soliq Bosh Adminga to‘lanadi</b> (98% sof foyda tur kompaniyasida qoladi).</li>
                 <li><b>Mijozlar shaxsiy ro‘yxatiga (users) kirish huquqi yo‘q</b>.</li>
               </ul>
             </div>

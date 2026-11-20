@@ -9,7 +9,9 @@ import {
 } from '../auth.js';
 import { getAgencyCommissionRate, setAgencyCommissionRate } from '../services/agencySettings.js';
 import { 
-  getPublicStaffList, 
+  getStaffListWithStats,
+  getStaffStats,
+  resetStaffStats,
   findStaffByIdentifier, 
   saveStaff, 
   deleteStaff, 
@@ -118,8 +120,22 @@ router.get('/staff', authenticateToken, requireRole('main_admin'), async (req: A
     return res.status(503).json({ success: false, error: 'MongoDB ulanmagan; admin ro‘yxati mavjud emas.' });
   }
   try {
-    const staffList = await getPublicStaffList();
+    const staffList = await getStaffListWithStats();
     res.json({ success: true, staff: staffList });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/staff/:id/reset-stats', authenticateToken, requireRole('main_admin'), async (req: AuthRequest, res) => {
+  if (!getDBStatus().connected) {
+    return res.status(503).json({ success: false, error: 'MongoDB ulanmagan; statistika nollanmadi.' });
+  }
+  try {
+    const result = await resetStaffStats(req.params.id);
+    if (!result.success) return res.status(400).json(result);
+    const stats = await getStaffStats(req.params.id);
+    return res.json({ success: true, stats });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

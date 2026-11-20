@@ -1250,7 +1250,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${tour.agencyName.isNotEmpty ? tour.agencyName : 'SayrHub Agentligi'} (+${tour.markupValue.toStringAsFixed(tour.markupValue.truncateToDouble() == tour.markupValue ? 0 : 1)}%)',
+                            '${tour.agencyName.isNotEmpty ? tour.agencyName : (tour.adminName.isNotEmpty ? tour.adminName : 'Tur kompaniyasi')} (+${tour.markupValue.toStringAsFixed(tour.markupValue.truncateToDouble() == tour.markupValue ? 0 : 1)}%)',
                             style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,

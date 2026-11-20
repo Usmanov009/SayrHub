@@ -32,6 +32,9 @@ class TourPackage {
   final String tourOperator;
   final String agencyName;
   final String operatorBadge;
+  final String adminId;
+  final String adminUsername;
+  final String adminName;
   final double? lat;
   final double? lng;
 
@@ -67,8 +70,11 @@ class TourPackage {
     this.markupType = 'percent',
     this.markupValue = 8,
     this.tourOperator = 'Kompas Tour',
-    this.agencyName = 'SayrHub',
+    this.agencyName = 'Tur kompaniyasi',
     this.operatorBadge = 'Kompas Tour Live (1:1)',
+    this.adminId = '',
+    this.adminUsername = '',
+    this.adminName = '',
     this.lat,
     this.lng,
   });
@@ -120,9 +126,12 @@ class TourPackage {
           ? (json['markupValue'] as num)
           : 8,
       tourOperator: json['tourOperator']?.toString() ?? 'Kompas Tour',
-      agencyName: json['agencyName']?.toString() ?? 'SayrHub',
+      agencyName: json['agencyName']?.toString() ?? 'Tur kompaniyasi',
       operatorBadge:
           json['operatorBadge']?.toString() ?? 'Kompas Tour Live (1:1)',
+      adminId: json['adminId']?.toString() ?? '',
+      adminUsername: json['adminUsername']?.toString() ?? '',
+      adminName: json['adminName']?.toString() ?? '',
       lat: (json['lat'] is num) ? (json['lat'] as num).toDouble() : null,
       lng: (json['lng'] is num) ? (json['lng'] as num).toDouble() : null,
     );
@@ -163,6 +172,9 @@ class TourPackage {
       'tourOperator': tourOperator,
       'agencyName': agencyName,
       'operatorBadge': operatorBadge,
+      'adminId': adminId,
+      'adminUsername': adminUsername,
+      'adminName': adminName,
       'lat': lat,
       'lng': lng,
     };
@@ -203,6 +215,9 @@ class TourPackage {
       tourOperator: tourOperator,
       agencyName: agencyName,
       operatorBadge: operatorBadge,
+      adminId: adminId,
+      adminUsername: adminUsername,
+      adminName: adminName,
       lat: lat,
       lng: lng,
     );

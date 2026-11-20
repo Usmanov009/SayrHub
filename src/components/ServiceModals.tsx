@@ -446,7 +446,7 @@ export const ServiceModals: React.FC<ServiceModalsProps> = ({
                       Charter Blok Egasi
                     </span>
                     <span className="font-extrabold text-sky-600 dark:text-sky-400 truncate block">
-                      {selectedFlight.tourOperator || 'SayrHub'}
+                      {selectedFlight.tourOperator || 'Tur kompaniyasi'}
                     </span>
                   </div>
                 </div>
@@ -456,7 +456,7 @@ export const ServiceModals: React.FC<ServiceModalsProps> = ({
                     Chipta Agentligi
                   </span>
                   <span className="font-black text-emerald-600 dark:text-emerald-400">
-                    <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {selectedFlight.agencyName || 'SayrHub Agentligi'}</span>
+                    <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {selectedFlight.agencyName || 'Tur kompaniyasi'}</span>
                   </span>
                 </div>
               </div>
@@ -655,7 +655,7 @@ export const ServiceModals: React.FC<ServiceModalsProps> = ({
                       Asosiy Turoperator
                     </span>
                     <span className="font-extrabold text-sky-600 dark:text-sky-400 truncate block">
-                      {selectedHotel.tourOperator || 'SayrHub'}
+                      {selectedHotel.tourOperator || 'Tur kompaniyasi'}
                     </span>
                   </div>
                 </div>
@@ -665,7 +665,7 @@ export const ServiceModals: React.FC<ServiceModalsProps> = ({
                     Rasmiy Hamkor Agentlik
                   </span>
                   <span className="font-black text-emerald-600 dark:text-emerald-400">
-                    <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {selectedHotel.agencyName || 'SayrHub Agentligi'}</span>
+                    <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {selectedHotel.agencyName || 'Tur kompaniyasi'}</span>
                   </span>
                 </div>
               </div>

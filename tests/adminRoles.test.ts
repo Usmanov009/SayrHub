@@ -7,7 +7,7 @@ import {
 } from '../src/admin/adminTypes';
 import type { Booking, TourPackage } from '../src/types';
 
-describe('Admin Roles & 3% Commission System', () => {
+describe('Admin Roles & 2% Tax System', () => {
   const mainAdmin: AdminUser = {
     id: 'adm-root',
     name: 'Bosh Admin',
@@ -85,15 +85,15 @@ describe('Admin Roles & 3% Commission System', () => {
     type: 'active',
   };
 
-  describe('3% Commission Calculation', () => {
-    it('calculates 3% commission to main admin and 97% net revenue correctly', () => {
+  describe('2% Tax Calculation', () => {
+    it('calculates 2% tax to main admin and 98% net revenue correctly', () => {
       const gross = 10000;
       const result = calculateTourAdminFinancials(gross);
 
       expect(result.grossRevenue).toBe(10000);
-      expect(result.commissionPercent).toBe(3);
-      expect(result.commissionFee).toBe(300); // 3% of 10,000 = 300
-      expect(result.netRevenue).toBe(9700);    // 97% of 10,000 = 9700
+      expect(result.commissionPercent).toBe(2);
+      expect(result.commissionFee).toBe(200); // 2% of 10,000 = 200
+      expect(result.netRevenue).toBe(9800);    // 98% of 10,000 = 9800
     });
 
     it('handles $0 revenue gracefully', () => {
@@ -105,9 +105,9 @@ describe('Admin Roles & 3% Commission System', () => {
 
     it('correctly rounds small commission values', () => {
       const result = calculateTourAdminFinancials(750);
-      // 750 * 0.03 = 22.5 -> rounds to 23
-      expect(result.commissionFee).toBe(23);
-      expect(result.netRevenue).toBe(727);
+      // 750 * 0.02 = 15
+      expect(result.commissionFee).toBe(15);
+      expect(result.netRevenue).toBe(735);
     });
   });
 

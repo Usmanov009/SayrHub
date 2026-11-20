@@ -147,6 +147,8 @@ const AdminStaffSchema = new mongoose.Schema({
   canEditFinancials: { type: Boolean, default: true },
   canManageBookings: { type: Boolean, default: true },
   canManageCatalog: { type: Boolean, default: true },
+  taxRate: { type: Number, default: 2 },
+  statsResetAt: String,
   createdAt: String,
   lastActive: String,
   status: { type: String, default: 'active' },
@@ -178,7 +180,7 @@ export const AdminStaffModel = mongoose.models.AdminStaff || mongoose.model('Adm
 export const AgencySettingsModel = mongoose.models.AgencySettings || mongoose.model('AgencySettings', AgencySettingsSchema);
 const CatalogItemSchema = new mongoose.Schema({
   id: { type: String, required: true },
-  kind: { type: String, enum: ['combo-tours', 'flights', 'hotels'], required: true },
+  kind: { type: String, enum: ['combo-tours', 'flights', 'hotels', 'group-tours'], required: true },
   data: { type: mongoose.Schema.Types.Mixed, required: true },
 }, { timestamps: true });
 CatalogItemSchema.index({ kind: 1, id: 1 }, { unique: true });

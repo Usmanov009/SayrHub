@@ -58,6 +58,7 @@ interface AdminPageProps {
   onAddStaff: (staff: AdminUser) => Promise<void>;
   onUpdateStaff: (staff: AdminUser) => Promise<void>;
   onRemoveStaff: (staffId: string) => Promise<void>;
+  onResetStaffStats?: (staffId: string) => Promise<void>;
   onShowToast: (text: string, type?: 'success' | 'error' | 'info') => void;
   agencyCommissionRate?: number;
   onUpdateCommissionRate?: (rate: number) => Promise<void>;
@@ -113,6 +114,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   onAddStaff,
   onUpdateStaff,
   onRemoveStaff,
+  onResetStaffStats,
   onShowToast,
   agencyCommissionRate = 0,
   onUpdateCommissionRate,
@@ -450,6 +452,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       onAddStaff={onAddStaff}
                       onUpdateStaff={onUpdateStaff}
                       onRemoveStaff={onRemoveStaff}
+                      onResetStaffStats={onResetStaffStats}
                       onShowToast={onShowToast}
                       globalSearch={searchTerm}
                     />

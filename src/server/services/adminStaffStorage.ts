@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
-import { AdminStaffModel } from '../../../db.js';
+import { AdminStaffModel, BookingModel } from '../../../db.js';
 import { hashPassword } from '../auth.js';
 
 export interface AdminStaffRecord {
@@ -20,6 +20,8 @@ export interface AdminStaffRecord {
   canEditFinancials?: boolean;
   canManageBookings?: boolean;
   canManageCatalog?: boolean;
+  taxRate?: number;
+  statsResetAt?: string;
   createdAt?: string;
   lastActive?: string;
   status: 'active' | 'suspended';
@@ -53,6 +55,63 @@ export async function getAllStaff(): Promise<AdminStaffRecord[]> {
 export async function getPublicStaffList() {
   const staff = await getAllStaff();
   return staff.map(sanitizeStaff);
+}
+
+export interface StaffStats {
+  revenue: number;
+  toursSold: number;
+  taxRate: number;
+  tax: number;
+  statsResetAt?: string | null;
+}
+
+export async function getStaffStats(staffId: string): Promise<StaffStats | null> {
+  assertDatabaseReady();
+  const staff = await AdminStaffModel.findOne({ id: staffId }).lean() as unknown as AdminStaffRecord | null;
+  if (!staff) return null;
+
+  const resetAt = staff.statsResetAt ? new Date(staff.statsResetAt) : null;
+  const match: Record<string, unknown> = {
+    type: { $ne: 'cancelled' },
+    $or: [{ adminId: staffId }, { adminName: staff.name }],
+  };
+  if (resetAt && !Number.isNaN(resetAt.getTime())) {
+    match.createdAt = { $gte: resetAt };
+  }
+
+  const [agg] = await BookingModel.aggregate([
+    { $match: match },
+    { $group: { _id: null, revenue: { $sum: '$totalNumeric' }, toursSold: { $sum: 1 } } },
+  ]);
+
+  const revenue = Number(agg?.revenue || 0);
+  const toursSold = Number(agg?.toursSold || 0);
+  const taxRate = Number(staff.taxRate ?? 2);
+  const tax = Math.round((revenue * taxRate) / 100);
+
+  return { revenue, toursSold, taxRate, tax, statsResetAt: staff.statsResetAt || null };
+}
+
+export async function getStaffListWithStats() {
+  const staffList = await getAllStaff();
+  return Promise.all(
+    staffList.map(async (staff) => {
+      const stats = await getStaffStats(staff.id);
+      return { ...sanitizeStaff(staff), ...(stats || {}) };
+    }),
+  );
+}
+
+export async function resetStaffStats(staffId: string): Promise<{ success: boolean; error?: string }> {
+  assertDatabaseReady();
+  if (staffId === 'adm-root') {
+    return { success: false, error: 'Bosh admin statistikasini nollash mumkin emas.' };
+  }
+  const staff = await AdminStaffModel.findOne({ id: staffId }).lean() as unknown as AdminStaffRecord | null;
+  if (!staff) return { success: false, error: 'Tur admin topilmadi.' };
+  const now = new Date().toISOString();
+  await AdminStaffModel.findOneAndUpdate({ id: staffId }, { $set: { statsResetAt: now } });
+  return { success: true };
 }
 
 export async function findStaffByIdentifier(identifier: string): Promise<AdminStaffRecord | null> {
@@ -105,6 +164,8 @@ export async function saveStaff(
     canEditFinancials: false,
     canManageBookings: data.canManageBookings ?? true,
     canManageCatalog: data.canManageCatalog ?? true,
+    taxRate: existing?.taxRate ?? data.taxRate ?? 2,
+    statsResetAt: existing?.statsResetAt,
     createdAt: existing?.createdAt || new Date().toISOString(),
     lastActive: new Date().toISOString(),
     status: data.status || existing?.status || 'active',

@@ -1069,6 +1069,9 @@ export default function App() {
     const newBooking: Booking = {
       id: `group-booking-${Date.now()}`,
       tourId: group.id,
+      adminId: group.adminId,
+      adminUsername: group.adminUsername,
+      adminName: group.adminName,
       tourTitle: group.title,
       dest: group.destination,
       dates: `${group.departureDate} (${group.nights} kecha)`,
@@ -1151,6 +1154,23 @@ export default function App() {
   const handleRemoveStaff = async (staffId: string) => {
     await requestApi('/api/admin/staff/' + encodeURIComponent(staffId), { method: 'DELETE' });
     setAdminStaffList((prev) => prev.filter((item) => item.id !== staffId));
+  };
+
+  const handleResetStaffStats = async (staffId: string) => {
+    await requestApi('/api/admin/staff/' + encodeURIComponent(staffId) + '/reset-stats', { method: 'POST' });
+    let token = '';
+    try {
+      token = sessionStorage.getItem('sayrhub_admin_token') || sessionStorage.getItem('travelway_admin_token') || '';
+    } catch (e) {}
+    const res = await fetch('/api/admin/staff', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const data = await res.json();
+    if (res.ok && data.success && Array.isArray(data.staff)) {
+      setAdminStaffList(data.staff);
+    } else {
+      setAdminStaffList((prev) => prev.map((item) => item.id === staffId ? { ...item, revenue: 0, toursSold: 0, tax: 0 } : item));
+    }
   };
 
   const handleUpdateCommissionRate = async (newRate: number) => {
@@ -1348,6 +1368,7 @@ export default function App() {
         onAddStaff={handleAddStaff}
         onUpdateStaff={handleUpdateStaff}
         onRemoveStaff={handleRemoveStaff}
+        onResetStaffStats={handleResetStaffStats}
         onShowToast={showToast}
         agencyCommissionRate={agencyCommissionRate}
         onUpdateCommissionRate={handleUpdateCommissionRate}
