@@ -119,6 +119,7 @@ export default function App() {
   // Desktop Admin Panel State
   const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
+      if (isTelegramMiniApp()) return false;
       const path = window.location.pathname.toLowerCase();
       return path === '/admin' || path.startsWith('/admin');
     }
@@ -217,6 +218,16 @@ export default function App() {
       setIsRefreshingBookings(false);
     }
   }, [getAdminToken, getUserToken]);
+
+  // In Telegram Mini App, guarantee that admin mode is strictly prevented for users
+  useEffect(() => {
+    if (isTelegramMiniApp() && isAdminMode) {
+      setIsAdminMode(false);
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/');
+      }
+    }
+  }, [isAdminMode]);
 
   // Sync staff list from backend / MongoDB only when admin is authenticated
   useEffect(() => {
@@ -1287,13 +1298,17 @@ export default function App() {
             'info'
           );
         }}
-        onOpenAdmin={() => {
-          if (typeof window !== 'undefined') {
-            window.history.pushState({}, '', '/admin');
-          }
-          setIsAdminMode(true);
-          void fetchBookings();
-        }}
+        onOpenAdmin={
+          !isTelegramMiniApp() && isAdminAuthenticated
+            ? () => {
+                if (typeof window !== 'undefined') {
+                  window.history.pushState({}, '', '/admin');
+                }
+                setIsAdminMode(true);
+                void fetchBookings();
+              }
+            : undefined
+        }
         onAvatarClick={() => {
           if (currentTab !== 'profile') {
             setCurrentTab('profile');
@@ -1459,7 +1474,11 @@ export default function App() {
                     showToast(notificationsEnabled ? "Push bildirishnomalar o'chirildi" : "Push bildirishnomalar yoqildi", 'info');
                   }}
                   onOpenNotifications={() => setIsNotificationsOpen(true)}
-                  onOpenServerStatus={() => setIsServerStatusOpen(true)}
+                  onOpenServerStatus={
+                    !isTelegramMiniApp() && isAdminAuthenticated
+                      ? () => setIsServerStatusOpen(true)
+                      : undefined
+                  }
                   onOpenPriceAlerts={() => {
                     if (priceAlerts.length > 0 && tours.length > 0) {
                       const alertTour = tours.find((t) => t.id === priceAlerts[0].tourId) || tours[0];
@@ -1469,13 +1488,17 @@ export default function App() {
                     }
                   }}
                   onOpenLogin={() => setIsTelegramAuthOpen(true)}
-                  onOpenAdmin={() => {
-                    if (typeof window !== 'undefined') {
-                      window.history.pushState({}, '', '/admin');
-                    }
-                    setIsAdminMode(true);
-                    void fetchBookings();
-                  }}
+                  onOpenAdmin={
+                    !isTelegramMiniApp() && isAdminAuthenticated
+                      ? () => {
+                          if (typeof window !== 'undefined') {
+                            window.history.pushState({}, '', '/admin');
+                          }
+                          setIsAdminMode(true);
+                          void fetchBookings();
+                        }
+                      : undefined
+                  }
                   onOpenSupport={() => setIsSupportOpen(true)}
                   onLogout={() => setIsLogoutConfirmOpen(true)}
                   onShowToast={showToast}
@@ -1617,8 +1640,8 @@ export default function App() {
             </Suspense>
           )}
 
-          {/* Server & System Status Monitor Modal (Mobile Parity) */}
-          {isServerStatusOpen && (
+          {/* Server & System Status Monitor Modal (Desktop Admin Only) */}
+          {isServerStatusOpen && !isTelegramMiniApp() && isAdminAuthenticated && (
             <Suspense fallback={null}>
               <ServerStatusModal
                 isOpen={isServerStatusOpen}

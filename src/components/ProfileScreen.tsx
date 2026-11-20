@@ -29,7 +29,7 @@ import {
   Luggage,
   Heart
 } from '@/lib/flaticon-icons';
-import { hapticLight, hapticSelection } from '../lib/telegramWebApp';
+import { hapticLight, hapticSelection, isTelegramMiniApp } from '../lib/telegramWebApp';
 
 interface ProfileScreenProps {
   user: UserProfile;
@@ -443,26 +443,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </h3>
 
         <div className="space-y-2">
-          {/* Server Status Monitor (Exact Mobile Parity) */}
-          <Button
-            variant="outline"
-            onClick={onOpenServerStatus}
-            className="w-full justify-between rounded-xl h-12 px-3.5 cursor-pointer bg-muted/40 border-border/80"
-          >
-            <div className="flex items-center gap-3 text-left min-w-0 flex-1 mr-2">
-              <Activity className="w-4 h-4 text-primary shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">Server & MongoDB Ulanishi</p>
-                <p className="text-[10px] text-muted-foreground font-normal truncate">Jonli integratsiya va server holati monitori</p>
+          {/* Server Status Monitor (Admin / Desktop Only) */}
+          {onOpenServerStatus && !isTelegramMiniApp() && (
+            <Button
+              variant="outline"
+              onClick={onOpenServerStatus}
+              className="hidden lg:flex w-full justify-between rounded-xl h-12 px-3.5 cursor-pointer bg-muted/40 border-border/80"
+            >
+              <div className="flex items-center gap-3 text-left min-w-0 flex-1 mr-2">
+                <Activity className="w-4 h-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">Server & MongoDB Ulanishi</p>
+                  <p className="text-[10px] text-muted-foreground font-normal truncate">Jonli integratsiya va server holati monitori</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Badge variant="outline" className="text-[9px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30">
-                Online
-              </Badge>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </div>
-          </Button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Badge variant="outline" className="text-[9px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30">
+                  Online
+                </Badge>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Button>
+          )}
 
           {/* Notifications Modal & Toggle */}
           <div className="rounded-xl p-3 bg-muted/40 border border-border/80 flex items-center justify-between">
@@ -514,12 +516,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </Button>
           </a>
 
-          {/* Admin Mode Shortcut (Accessible if role allows or for test) */}
-          {onOpenAdmin && (
+          {/* Admin Mode Shortcut (Admin / Desktop Only) */}
+          {onOpenAdmin && !isTelegramMiniApp() && (
             <Button
               variant="outline"
               onClick={onOpenAdmin}
-              className="w-full justify-between rounded-xl h-12 px-3.5 cursor-pointer bg-muted/40 border-border/80"
+              className="hidden lg:flex w-full justify-between rounded-xl h-12 px-3.5 cursor-pointer bg-muted/40 border-border/80"
             >
               <div className="flex items-center gap-3 text-left">
                 <ShieldCheck className="w-4 h-4 text-purple-500" />
