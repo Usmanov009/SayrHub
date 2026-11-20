@@ -9,6 +9,7 @@ import '../models/hot_deal.dart';
 import '../models/combo_tour.dart';
 import '../models/flight_ticket.dart';
 import '../models/hotel_only.dart';
+import '../models/group_tour.dart';
 import '../models/booking.dart';
 import '../models/price_alert.dart';
 
@@ -66,6 +67,12 @@ class AppProvider extends ChangeNotifier {
   bool _isLoadingServices = false;
   bool get isLoadingServices => _isLoadingServices;
 
+  // Group tours
+  List<GroupTour> _groupTours = [];
+  List<GroupTour> get groupTours => _groupTours;
+  bool _isLoadingGroupTours = false;
+  bool get isLoadingGroupTours => _isLoadingGroupTours;
+
   // Bookings
   List<Booking> _bookings = [];
   List<Booking> get bookings => _bookings;
@@ -97,6 +104,7 @@ class AppProvider extends ChangeNotifier {
     loadTours();
     loadHotDeals();
     loadServices();
+    loadGroupTours();
     loadBookings();
     loadPriceAlerts();
   }
@@ -224,6 +232,18 @@ class AppProvider extends ChangeNotifier {
     } catch (_) {}
 
     _isLoadingHotDeals = false;
+    notifyListeners();
+  }
+
+  Future<void> loadGroupTours() async {
+    _isLoadingGroupTours = true;
+    notifyListeners();
+
+    try {
+      _groupTours = await apiService.getGroupTours();
+    } catch (_) {}
+
+    _isLoadingGroupTours = false;
     notifyListeners();
   }
 

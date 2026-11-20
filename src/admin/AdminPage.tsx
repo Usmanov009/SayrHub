@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
-import { TourPackage, Booking, PriceAlert, ComboTour, FlightTicket, HotelOnly } from '../types';
+import { TourPackage, Booking, PriceAlert, ComboTour, FlightTicket, HotelOnly, GroupTour } from '../types';
 import { AdminRole, AdminTab, AdminUser, isBookingForAdmin } from './adminTypes';
 import { AppSidebar } from './dashboard/app-sidebar';
 import { SiteHeader } from './dashboard/site-header';
@@ -10,6 +10,7 @@ import { DataTable } from './dashboard/data-table';
 import { toTableRows } from './dashboard/booking-rows';
 import { AdminToursManager } from './AdminToursManager';
 import { AdminComboManager } from './AdminComboManager';
+import { AdminGroupToursManager } from './AdminGroupToursManager';
 import { AdminFlightsManager } from './AdminFlightsManager';
 import { AdminHotelsManager } from './AdminHotelsManager';
 import { AdminBookingsManager } from './AdminBookingsManager';
@@ -36,6 +37,10 @@ interface AdminPageProps {
   onAddComboTour: (combo: ComboTour) => Promise<void>;
   onUpdateComboTour: (combo: ComboTour) => Promise<void>;
   onDeleteComboTour: (comboId: string) => Promise<void>;
+  groupTours: GroupTour[];
+  onAddGroupTour: (group: GroupTour) => Promise<void>;
+  onUpdateGroupTour: (group: GroupTour) => Promise<void>;
+  onDeleteGroupTour: (groupId: string) => Promise<void>;
   flights: FlightTicket[];
   onAddFlight: (flight: FlightTicket) => Promise<void>;
   onUpdateFlight: (flight: FlightTicket) => Promise<void>;
@@ -64,6 +69,7 @@ const pageTitles: Record<AdminTab, string> = {
   dashboard: 'Boshqaruv paneli',
   tours: 'Turpaketlar',
   combo: 'Combo turlar',
+  groups: 'Guruh sayohati',
   flights: 'Aviachiptalar',
   hotels: 'Mehmonxonalar',
   bookings: 'Buyurtmalar',
@@ -86,6 +92,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   onAddComboTour,
   onUpdateComboTour,
   onDeleteComboTour,
+  groupTours,
+  onAddGroupTour,
+  onUpdateGroupTour,
+  onDeleteGroupTour,
   flights,
   onAddFlight,
   onUpdateFlight,
@@ -361,6 +371,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       onAddComboTour={onAddComboTour}
                       onUpdateComboTour={onUpdateComboTour}
                       onDeleteComboTour={onDeleteComboTour}
+                      onShowToast={onShowToast}
+                      globalSearch={searchTerm}
+                    />
+                  )}
+
+                  {currentTab === 'groups' && (
+                    <AdminGroupToursManager
+                      currentRole={currentRole}
+                      currentAdmin={currentAdmin}
+                      groupTours={groupTours}
+                      onAddGroupTour={onAddGroupTour}
+                      onUpdateGroupTour={onUpdateGroupTour}
+                      onDeleteGroupTour={onDeleteGroupTour}
                       onShowToast={onShowToast}
                       globalSearch={searchTerm}
                     />

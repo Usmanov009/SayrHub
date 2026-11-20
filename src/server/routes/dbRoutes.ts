@@ -11,7 +11,7 @@ import { authenticateToken, AuthRequest, optionalAuth, requireRole } from '../au
 
 const router = Router();
 const adminRoles = ['main_admin', 'tour_admin'];
-const catalogKinds = ['combo-tours', 'flights', 'hotels'] as const;
+const catalogKinds = ['combo-tours', 'flights', 'hotels', 'group-tours'] as const;
 type CatalogKind = typeof catalogKinds[number];
 
 function requireDatabase(_req: Request, res: Response, next: NextFunction) {
@@ -123,10 +123,13 @@ router.post('/catalog/:kind', authenticateToken, requireRole(...adminRoles), req
   if (!item?.id || !hasName) {
     return res.status(400).json({ success: false, error: 'Katalog elementi ID va nomga ega bo‘lishi kerak.' });
   }
+  const payload = kind === 'group-tours'
+    ? { data: { ...item, availableSeats: Math.max(0, Number(item.availableSeats) || 0) } }
+    : { data: item };
   try {
     await CatalogItemModel.findOneAndUpdate(
       { kind, id: String(item.id) },
-      { $set: { data: item } },
+      { $set: payload },
       { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true },
     );
     return res.json({ success: true, item });

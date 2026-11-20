@@ -7,6 +7,7 @@ import '../models/hot_deal.dart';
 import '../models/combo_tour.dart';
 import '../models/flight_ticket.dart';
 import '../models/hotel_only.dart';
+import '../models/group_tour.dart';
 import '../models/booking.dart';
 import '../models/price_alert.dart';
 
@@ -228,7 +229,26 @@ class ApiService {
     return [];
   }
 
-  // 8. Bookings (DB)
+  // 8. Group Tours (DB catalog)
+  Future<List<GroupTour>> getGroupTours() async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/db/catalog/group-tours');
+      final res = await http.get(uri).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
+        if (data['success'] == true && data['items'] is List) {
+          return (data['items'] as List)
+              .map((e) => GroupTour.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching group tours: $e');
+    }
+    return [];
+  }
+
+  // 9. Bookings (DB)
   Future<List<Booking>> getBookings({String? travelerId, String? phone}) async {
     try {
       final qParams = <String, String>{};

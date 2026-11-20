@@ -1,6 +1,6 @@
 export type TabType = 'search' | 'explore' | 'hot' | 'trips' | 'profile' | 'auth';
 
-export type SearchServiceMode = 'tours' | 'combo' | 'flights' | 'hotels';
+export type SearchServiceMode = 'tours' | 'combo' | 'flights' | 'hotels' | 'groups';
 
 export type LanguageCode = 'UZ' | 'RU' | 'EN';
 
@@ -250,4 +250,24 @@ export interface HotelOnly {
   markupValue?: number;
   tourOperator?: string;
   agencyName?: string;
+}
+
+export interface GroupTour {
+  id: string;
+  title: string;
+  destination: string;
+  country: string;
+  departureCity: string;
+  departureDate: string;
+  nights: number;
+  price: number;
+  totalSeats: number;
+  availableSeats: number;
+  img: string;
+  description: string;
+  status: 'open' | 'closed';
+  adminId?: string;
+  adminUsername?: string;
+  adminName?: string;
+  createdAt?: string;
 }

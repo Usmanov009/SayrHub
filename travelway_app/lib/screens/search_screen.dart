@@ -336,6 +336,11 @@ class _SearchScreenState extends State<SearchScreen> {
                       FlaticonIcons.hotel,
                       'Mehmonxona',
                     ),
+                    _buildSegmentButton(
+                      'groups',
+                      FlaticonIcons.peopleOutline,
+                      'Guruh',
+                    ),
                   ],
                 ),
               ),
@@ -349,7 +354,9 @@ class _SearchScreenState extends State<SearchScreen> {
               else if (_serviceMode == 'flights')
                 _buildFlightsView(provider)
               else if (_serviceMode == 'hotels')
-                _buildHotelsOnlyView(provider),
+                _buildHotelsOnlyView(provider)
+              else if (_serviceMode == 'groups')
+                _buildGroupToursView(provider),
             ],
           ),
         ),
@@ -377,6 +384,9 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(height: 2),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -561,6 +571,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                   onSubmitted: (val) {
                                     final n = int.tryParse(val);
                                     provider.setNightsCount(n);
+                                  },
+                                  onChanged: (val) {
+                                    final n = int.tryParse(val);
+                                    if (n != null && n > 0) {
+                                      provider.setNightsCount(n);
+                                    }
                                   },
                                 ),
                               ),
@@ -1559,26 +1575,29 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(height: 8),
 
               // Price filters row
-              Row(
-                children: [
-                  _buildComboChip(
-                    label: 'Barcha narxlar',
-                    isSelected: _comboPriceFilter == 'ALL',
-                    onTap: () => setState(() => _comboPriceFilter = 'ALL'),
-                  ),
-                  const SizedBox(width: 6),
-                  _buildComboChip(
-                    label: 'Arzonroq (< \$900)',
-                    isSelected: _comboPriceFilter == 'CHEAP',
-                    onTap: () => setState(() => _comboPriceFilter = 'CHEAP'),
-                  ),
-                  const SizedBox(width: 6),
-                  _buildComboChip(
-                    label: 'Premium (\$900+)',
-                    isSelected: _comboPriceFilter == 'LUXURY',
-                    onTap: () => setState(() => _comboPriceFilter = 'LUXURY'),
-                  ),
-                ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildComboChip(
+                      label: 'Barcha narxlar',
+                      isSelected: _comboPriceFilter == 'ALL',
+                      onTap: () => setState(() => _comboPriceFilter = 'ALL'),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildComboChip(
+                      label: 'Arzonroq (< \$900)',
+                      isSelected: _comboPriceFilter == 'CHEAP',
+                      onTap: () => setState(() => _comboPriceFilter = 'CHEAP'),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildComboChip(
+                      label: 'Premium (\$900+)',
+                      isSelected: _comboPriceFilter == 'LUXURY',
+                      onTap: () => setState(() => _comboPriceFilter = 'LUXURY'),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
 
@@ -2072,6 +2091,265 @@ class _SearchScreenState extends State<SearchScreen> {
                         ],
                       ),
                     ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // --- GROUP TOURS VIEW ---
+  Widget _buildGroupToursView(AppProvider provider) {
+    if (provider.isLoadingGroupTours) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        ),
+      );
+    }
+    if (provider.groupTours.isEmpty) {
+      return const Center(child: Text('Hozircha guruh sayohatlari mavjud emas'));
+    }
+
+    final groups = provider.groupTours.toList()
+      ..sort((a, b) => a.departureDate.compareTo(b.departureDate));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primary.withOpacity(0.15),
+                AppTheme.accentSky.withOpacity(0.12),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppTheme.borderDark),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(FlaticonIcons.peopleOutline, size: 14, color: Colors.amber),
+                  SizedBox(width: 4),
+                  Text(
+                    'Guruh sayohati',
+                    style: TextStyle(
+                      color: Colors.amber,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Guruh bo‘lib sayohat qiling',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textMain,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Cheklangan o‘rinlar, qulay narx va yangi do‘stlar bilan birga turing.',
+                style: TextStyle(fontSize: 11, color: AppTheme.textSub),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: groups.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          itemBuilder: (context, idx) {
+            final g = groups[idx];
+            final seatsLeft = g.availableSeats < 0 ? 0 : g.availableSeats;
+            final filled = (g.totalSeats - seatsLeft).clamp(0, g.totalSeats);
+            final progress = g.totalSeats > 0
+                ? (filled / g.totalSeats * 100).clamp(0, 100).toDouble()
+                : 0.0;
+
+            return Container(
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceDark,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.borderDark),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      Image.network(
+                        g.img,
+                        height: 135,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(height: 135, color: AppTheme.subtleDark),
+                      ),
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: g.isOpen
+                                ? AppTheme.accentGreen
+                                : AppTheme.textMuted,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            g.isOpen ? '$seatsLeft o‘rin qoldi' : 'Yopiq',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 10,
+                        left: 12,
+                        right: 12,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              g.destination,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              g.departureDate,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          g.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppTheme.textMain,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${g.departureCity} • ${g.nights} kecha',
+                          style: const TextStyle(
+                            color: AppTheme.textSub,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progress / 100,
+                            minHeight: 6,
+                            backgroundColor: AppTheme.subtleDark,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              g.isOpen ? AppTheme.primary : AppTheme.textMuted,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '$filled/${g.totalSeats} band qilindi',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppTheme.textSub,
+                              ),
+                            ),
+                            Text(
+                              '\$${g.price}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: g.isOpen
+                                ? () {
+                                    final tempTour = TourPackage(
+                                      id: g.id,
+                                      title: g.title,
+                                      location: g.destination,
+                                      tag: 'Guruh sayohati',
+                                      nights: '${g.nights} kecha',
+                                      flight: '${g.departureCity}dan',
+                                      price: g.price,
+                                      img: g.img,
+                                      country: g.country.isNotEmpty
+                                          ? g.country
+                                          : g.destination,
+                                      resort: g.destination,
+                                    );
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            TourBookingScreen(tour: tempTour),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(
+                              g.isOpen ? 'Guruhga yozilish' : 'O‘rin yo‘q',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

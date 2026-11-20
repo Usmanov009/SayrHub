@@ -48,6 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final tcId = prefs.getString('sayrhub_user_id') ?? 'TC-882109';
       final passport =
           prefs.getString('sayrhub_user_passport') ?? 'AA 1234567';
+      final notifications = prefs.getBool('sayrhub_notifications_enabled') ?? true;
 
       final cardsRaw = prefs.getString('sayrhub_user_payment_cards');
       int cardsCount = 0;
@@ -63,6 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _userId = tcId;
         _userPassport = passport;
         _savedCardsCount = cardsCount;
+        _notifications = notifications;
         _isLoading = false;
       });
 
@@ -734,7 +736,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Switch(
                       value: _notifications,
                       activeColor: AppTheme.primary,
-                      onChanged: (val) => setState(() => _notifications = val),
+                      onChanged: (val) async {
+                        setState(() => _notifications = val);
+                        try {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('sayrhub_notifications_enabled', val);
+                        } catch (_) {}
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                val
+                                    ? 'Bildirishnomalar yoqildi'
+                                    : 'Bildirishnomalar o\'chirildi',
+                              ),
+                              backgroundColor: AppTheme.accentGreen,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -748,7 +769,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: FlaticonIcons.language,
                 title: 'Ilova tili',
                 subtitle: 'O\'zbekcha (UZ)',
-                onTap: () {},
+                onTap: () async {
+                  try {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('sayrhub_language', 'UZ');
+                  } catch (_) {}
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ilova tili: O\'zbekcha (UZ)'),
+                        backgroundColor: AppTheme.accentGreen,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
               ),
               const Divider(height: 1, indent: 56),
 
@@ -814,7 +849,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showPersonalInfoDialog() {
     final nameController = TextEditingController(text: _userName);
-    final phoneController = TextEditingController(text: _userPhone);
+    // The field uses a "+998 " prefix, so only keep the 9-digit local part.
+    final phoneDigits = _userPhone.replaceAll(RegExp(r'\D'), '');
+    final localPhone = phoneDigits.startsWith('998') && phoneDigits.length > 9
+        ? phoneDigits.substring(3)
+        : phoneDigits;
+    final phoneController = TextEditingController(
+      text: _PhoneNumberFormatter()
+          .formatEditUpdate(
+            const TextEditingValue(),
+            TextEditingValue(text: localPhone),
+          )
+          .text,
+    );
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -921,23 +968,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _savePersonalInfo(String name, String phone) async {
     try {
+      // Normalize to the canonical "+998 XX XXX XX XX" format.
+      final digits = phone.replaceAll(RegExp(r'\D'), '');
+      final local = digits.startsWith('998') && digits.length > 9
+          ? digits.substring(3)
+          : digits;
+      final formattedPhone = local.length >= 9
+          ? '+998 ${local.substring(0, 2)} ${local.substring(2, 5)} '
+              '${local.substring(5, 7)} ${local.substring(7, 9)}'
+          : phone.trim();
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('sayrhub_user_name', name);
-      await prefs.setString('sayrhub_user_phone', phone);
+      await prefs.setString('sayrhub_user_phone', formattedPhone);
       final tcId = prefs.getString('sayrhub_user_id') ?? _userId;
 
       // Sync customer profile to MongoDB
       ApiService().syncUserProfile(
         tcId: tcId,
         name: name,
-        phone: phone,
+        phone: formattedPhone,
         passport: _userPassport,
       );
 
       if (!mounted) return;
       setState(() {
         _userName = name;
-        _userPhone = phone;
+        _userPhone = formattedPhone;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

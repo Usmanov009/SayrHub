@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import { TabType, LanguageCode, ThemeMode, TourPackage, Booking, PaymentCard, UserProfile, ToastMessage, PriceAlert, ComboTour, FlightTicket, HotelOnly, ExploreVibe, HotSale } from './types';
+import { TabType, LanguageCode, ThemeMode, TourPackage, Booking, PaymentCard, UserProfile, ToastMessage, PriceAlert, ComboTour, FlightTicket, HotelOnly, ExploreVibe, HotSale, GroupTour } from './types';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { SearchScreen } from './components/SearchScreen';
@@ -73,15 +73,28 @@ export default function App() {
   const [showFlutterCode, setShowFlutterCode] = useState(false);
 
   // App settings
-  const [currentLang, setCurrentLang] = useState<LanguageCode>('UZ');
+  const [currentLang, setCurrentLang] = useState<LanguageCode>(() => {
+    try {
+      const saved = localStorage.getItem('sayrhub_language') || localStorage.getItem('travelway_language');
+      if (saved === 'UZ' || saved === 'RU' || saved === 'EN') return saved;
+    } catch (e) {}
+    return 'UZ';
+  });
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     try {
       const saved = localStorage.getItem('sayrhub_theme_mode') || localStorage.getItem('travelway_theme_mode');
-      if (saved === 'dark' || saved === 'light') return saved;
+      if (saved === 'dark' || saved === 'light' || saved === 'auto') return saved;
     } catch (e) {}
     return 'light';
   });
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('sayrhub_notifications_enabled') || localStorage.getItem('travelway_notifications_enabled');
+      if (saved === 'false') return false;
+      if (saved === 'true') return true;
+    } catch (e) {}
+    return true;
+  });
   const [hasUnreadNotifs, setHasUnreadNotifs] = useState(false);
 
   // Data state
@@ -92,6 +105,7 @@ export default function App() {
   const [cards, setCards] = useState<PaymentCard[]>([]);
   const [tours, setTours] = useState<TourPackage[]>([]);
   const [comboTours, setComboTours] = useState<ComboTour[]>([]);
+  const [groupTours, setGroupTours] = useState<GroupTour[]>([]);
   const [flights, setFlights] = useState<FlightTicket[]>([]);
   const [hotels, setHotels] = useState<HotelOnly[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -336,18 +350,21 @@ export default function App() {
       load<ComboTour>('/api/combo/tours', 'comboTours'),
       load<FlightTicket>('/api/flights/search', 'flights'),
       load<HotelOnly>('/api/hotels/search', 'hotels'),
-    ]).then(([nextTours, nextCombos, nextFlights, nextHotels]) => {
+      load<GroupTour>('/api/db/catalog/group-tours', 'items'),
+    ]).then(([nextTours, nextCombos, nextFlights, nextHotels, nextGroups]) => {
       if (!active) return;
       setTours(nextTours);
       setComboTours(nextCombos);
       setFlights(nextFlights);
       setHotels(nextHotels);
+      setGroupTours(nextGroups);
     }).catch((error: unknown) => {
       if (!active) return;
       setTours([]);
       setComboTours([]);
       setFlights([]);
       setHotels([]);
+      setGroupTours([]);
       console.error('Catalog load from MongoDB failed:', error);
     });
 
@@ -635,8 +652,12 @@ export default function App() {
       localStorage.setItem('sayrhub_theme_mode', themeMode);
       localStorage.setItem('travelway_theme_mode', themeMode);
     } catch (e) {}
-    syncTelegramTheme(themeMode === 'dark');
-    if (themeMode === 'light') {
+    const prefersDark = typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = themeMode === 'auto' ? prefersDark : themeMode === 'dark';
+    syncTelegramTheme(isDark);
+    if (!isDark) {
       document.documentElement.classList.remove('dark');
       document.documentElement.setAttribute('data-theme', 'light');
     } else {
@@ -644,6 +665,21 @@ export default function App() {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
   }, [themeMode]);
+
+  // Persist language & notification preferences
+  useEffect(() => {
+    try {
+      localStorage.setItem('sayrhub_language', currentLang);
+      localStorage.setItem('travelway_language', currentLang);
+    } catch (e) {}
+  }, [currentLang]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('sayrhub_notifications_enabled', String(notificationsEnabled));
+      localStorage.setItem('travelway_notifications_enabled', String(notificationsEnabled));
+    } catch (e) {}
+  }, [notificationsEnabled]);
 
   // Tour favorite toggle
   const handleToggleSaveTour = async (tourId: string, e?: React.MouseEvent) => {
@@ -1014,6 +1050,55 @@ export default function App() {
     setComboTours((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const handleAddGroupTour = async (group: GroupTour) => {
+    await requestApi('/api/db/catalog/group-tours', { method: 'POST', body: JSON.stringify(group) });
+    setGroupTours((prev) => [group, ...prev.filter((item) => item.id !== group.id)]);
+  };
+  const handleUpdateGroupTour = handleAddGroupTour;
+  const handleDeleteGroupTour = async (id: string) => {
+    await requestApi('/api/db/catalog/group-tours/' + encodeURIComponent(id), { method: 'DELETE' });
+    setGroupTours((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleBookGroup = async (group: GroupTour) => {
+    if (group.status !== 'open' || group.availableSeats <= 0) {
+      showToast('Bu guruh sayohatiga yozilish uchun o‘rin yo‘q.', 'error');
+      return;
+    }
+    const code = `TW-GRP-${Date.now()}`;
+    const newBooking: Booking = {
+      id: `group-booking-${Date.now()}`,
+      tourId: group.id,
+      tourTitle: group.title,
+      dest: group.destination,
+      dates: `${group.departureDate} (${group.nights} kecha)`,
+      startDate: group.departureDate,
+      endDate: group.departureDate,
+      status: 'Jarayonda',
+      voucherId: code,
+      price: `$${group.price} (Guruh)`,
+      totalNumeric: group.price,
+      travelerName: user.name,
+      type: 'active',
+      guestsCount: 1,
+      adultsCount: 1,
+      childrenCount: 0,
+    };
+
+    if (!(await persistBooking(newBooking))) return;
+
+    const updated: GroupTour = { ...group, availableSeats: Math.max(0, group.availableSeats - 1) };
+    setGroupTours((prev) => prev.map((item) => (item.id === group.id ? updated : item)));
+    try {
+      await requestApi('/api/db/catalog/group-tours', { method: 'POST', body: JSON.stringify(updated) });
+    } catch {
+      // Seat update is best-effort; booking already persisted.
+    }
+
+    showToast(`"${group.title}" guruh sayohatiga yozildingiz!`, 'success');
+    setCurrentTab('trips');
+  };
+
   const handleAddFlight = async (flight: FlightTicket) => {
     await requestApi('/api/db/catalog/flights', { method: 'POST', body: JSON.stringify(flight) });
     setFlights((prev) => [flight, ...prev.filter((item) => item.id !== flight.id)]);
@@ -1242,6 +1327,10 @@ export default function App() {
         onAddComboTour={handleAddComboTour}
         onUpdateComboTour={handleUpdateComboTour}
         onDeleteComboTour={handleDeleteComboTour}
+        groupTours={groupTours}
+        onAddGroupTour={handleAddGroupTour}
+        onUpdateGroupTour={handleUpdateGroupTour}
+        onDeleteGroupTour={handleDeleteGroupTour}
         flights={flights}
         onAddFlight={handleAddFlight}
         onUpdateFlight={handleUpdateFlight}
@@ -1371,6 +1460,7 @@ export default function App() {
                 <SearchScreen
                   tours={tours}
                   comboTours={comboTours}
+                  groupTours={groupTours}
                   flights={flights}
                   hotels={hotels}
                   onToggleSave={handleToggleSaveTour}
@@ -1385,8 +1475,9 @@ export default function App() {
                   priceAlerts={priceAlerts}
                   onSavePriceAlert={handleSavePriceAlert}
                   onDeletePriceAlert={handleDeletePriceAlert}
-                  onBookCombo={handleBookCombo}
-                  onBookFlight={handleBookFlight}
+                   onBookCombo={handleBookCombo}
+                   onBookGroup={handleBookGroup}
+                   onBookFlight={handleBookFlight}
                   onBookHotel={handleBookHotel}
                   agencyCommissionRate={agencyCommissionRate}
                 />

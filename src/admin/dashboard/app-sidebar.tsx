@@ -49,6 +49,11 @@ export function AppSidebar({
       icon: <IconPlaceholder lucide="LayersIcon" />,
     },
     {
+      key: "groups",
+      title: "Guruh sayohati",
+      icon: <IconPlaceholder lucide="UsersIcon" />,
+    },
+    {
       key: "flights",
       title: "Aviachiptalar",
       icon: <IconPlaceholder lucide="PlaneIcon" />,

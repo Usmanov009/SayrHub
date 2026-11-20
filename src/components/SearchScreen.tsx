@@ -1,9 +1,10 @@
 import React, { lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { TourPackage, PriceAlert, SearchServiceMode, ComboTour, FlightTicket, HotelOnly } from '../types';
+import { TourPackage, PriceAlert, SearchServiceMode, ComboTour, FlightTicket, HotelOnly, GroupTour } from '../types';
 import { ActiveAlertsModal } from './ActiveAlertsModal';
 import { ComboToursView } from './ComboToursView';
 import { FlightsView } from './FlightsView';
 import { HotelsOnlyView } from './HotelsOnlyView';
+import { GroupToursView } from './GroupToursView';
 import { ServiceModals } from './ServiceModals';
 import { CountrySelectCombobox } from './CountrySelectCombobox';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,11 +47,13 @@ interface SearchScreenProps {
   }) => void;
   onDeletePriceAlert?: (alertId: string) => void;
   onBookCombo?: (combo: ComboTour) => void;
+  onBookGroup?: (group: GroupTour) => void;
   onBookFlight?: (flight: FlightTicket) => void;
   onBookHotel?: (hotel: HotelOnly) => void;
   comboTours?: ComboTour[];
   flights?: FlightTicket[];
   hotels?: HotelOnly[];
+  groupTours?: GroupTour[];
   agencyCommissionRate?: number;
 }
 
@@ -252,6 +255,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
   comboTours = [],
   flights = [],
   hotels = [],
+  groupTours = [],
+  onBookGroup,
   agencyCommissionRate = 0
 }) => {
   // Service Mode State ('tours' | 'combo' | 'flights' | 'hotels')
@@ -272,8 +277,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
   const [selectedStars, setSelectedStars] = useState<string>('ALL');
   const [selectedAirline, setSelectedAirline] = useState<string>('Barcha aviakompaniyalar');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [minPrice, setMinPrice] = useState<number>(300);
-  const [maxPrice, setMaxPrice] = useState<number>(8000);
+  const [minPrice, setMinPrice] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(100000);
 
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'UZS'>('USD');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -359,11 +364,17 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
 
       const res = await fetch(`/api/kompas/search?${params.toString()}`);
       const data = await res.json();
-      if (data.success && Array.isArray(data.tours) && data.tours.length > 0) {
+      if (data.success && Array.isArray(data.tours)) {
         setLiveTours(data.tours);
-        setIsLiveActive(true);
-        onShowToast(`Jonli qidiruv: ${data.tours.length} ta turpaket topildi. Ko'rsatilgan narxlar so'rov natijasiga asoslangan.`, 'success');
+        setIsLiveActive(data.tours.length > 0);
+        if (data.tours.length > 0) {
+          onShowToast(`Jonli qidiruv: ${data.tours.length} ta turpaket topildi. Ko'rsatilgan narxlar so'rov natijasiga asoslangan.`, 'success');
+        } else {
+          onShowToast(`Qidiruv natijalari yangilandi`, 'info');
+        }
       } else {
+        setLiveTours([]);
+        setIsLiveActive(false);
         onShowToast(`Qidiruv natijalari yangilandi`, 'info');
       }
     } catch (err) {
@@ -411,7 +422,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
 
   // Filter parsing logic
   const filteredTours = useMemo(() => {
-    const currentPool = tours;
+    // Prefer fresh live Kompas results; fall back to the MongoDB catalog.
+    const currentPool = liveTours.length > 0 ? liveTours : tours;
     return currentPool.filter((tour) => {
       // 1. Departure City
       if (departureCity && tour.departureCity && !tour.isLiveKompas) {
@@ -554,7 +566,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
     if (selectedStars !== 'ALL') count++;
     if (selectedAirline !== 'Barcha aviakompaniyalar') count++;
     if (nightsFilter && nightsFilter !== 'ALL' && nightsFilter !== '') count++;
-    if (minPrice > 300 || maxPrice < 2000) count++;
+    if (minPrice > 0 || maxPrice < 100000) count++;
     return count;
   }, [countryCode, selectedType, selectedResort, selectedMeal, selectedStars, selectedAirline, nightsFilter, minPrice, maxPrice]);
 
@@ -566,9 +578,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
     setSelectedStars('ALL');
     setSelectedAirline('Barcha aviakompaniyalar');
     setNightsFilter('ALL');
-    setMinPrice(300);
-    setMaxPrice(2000);
+    setMinPrice(0);
+    setMaxPrice(100000);
     setSearchQuery('');
+    executeLiveSearch('ALL', 'Barcha kurortlar', departureCity, '', 'ALL', adultsCount, childrenCount);
     onShowToast("Barcha filtrlar qayta tiklandi (Barcha turlar)", 'info');
   };
 
@@ -654,8 +667,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
         </div>
       </section>
 
-      {/* SERVICE MODE TABS: Turpaketlar | Combo Turlar | Aviabiletlar | Mehmonxonalar */}
-      <div className="grid grid-cols-4 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl border border-border bg-muted/60 shadow-xs">
+      {/* SERVICE MODE TABS: Turpaketlar | Combo | Guruh | Aviabiletlar | Mehmonxonalar */}
+      <div className="grid grid-cols-5 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl border border-border bg-muted/60 shadow-xs">
         <Button
           type="button"
           id="tab-mode-tours"
@@ -711,6 +724,20 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
           <Hotel className="size-3.5 sm:size-4 shrink-0" />
           <span className="text-[10px] leading-tight font-bold truncate w-full text-center">Mehmonxona</span>
         </Button>
+
+        <Button
+          type="button"
+          id="tab-mode-groups"
+          variant={serviceMode === 'groups' ? 'default' : 'ghost'}
+          onClick={() => {
+            hapticSelection();
+            setServiceMode('groups');
+          }}
+          className="h-auto py-1.5 sm:py-2 px-1 rounded-xl flex flex-col items-center gap-0.5 cursor-pointer min-w-0"
+        >
+          <Users className="size-3.5 sm:size-4 shrink-0" />
+          <span className="text-[10px] leading-tight font-bold truncate w-full text-center">Guruh</span>
+        </Button>
       </div>
 
       {/* RENDER ACTIVE MODE */}
@@ -756,6 +783,18 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
         />
       )}
 
+      {serviceMode === 'groups' && (
+        <GroupToursView
+          groupTours={groupTours}
+          onBookGroup={(group) => {
+            if (onBookGroup) {
+              onBookGroup(group);
+            }
+          }}
+          onShowToast={onShowToast}
+        />
+      )}
+
       {serviceMode === 'tours' && (
         <>
       {/* 2. MAIN KOMPAS TOUR FILTER FORM (online.uz.kompastour.com/search_tour) */}
@@ -789,7 +828,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                 value={departureCity}
                 onChange={(e) => {
                   setDepartureCity(e.target.value);
-                  triggerSearch();
+                  executeLiveSearch(countryCode, selectedResort, e.target.value, searchQuery, nightsFilter, adultsCount, childrenCount);
                 }}
                 className="w-full bg-transparent text-xs font-extrabold border-0 p-0 focus:ring-0 cursor-pointer"
                 style={{ color: 'var(--tw-text-main)' }}
@@ -838,7 +877,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                 value={selectedResort}
                 onChange={(e) => {
                   setSelectedResort(e.target.value);
-                  triggerSearch();
+                  executeLiveSearch(countryCode, e.target.value, departureCity, searchQuery, nightsFilter, adultsCount, childrenCount);
                 }}
                 className="w-full bg-transparent text-xs font-extrabold border-0 p-0 focus:ring-0 cursor-pointer"
                 style={{ color: 'var(--tw-text-main)' }}

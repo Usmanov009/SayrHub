@@ -28,6 +28,7 @@ export type AdminTab =
   | 'dashboard'
   | 'tours'
   | 'combo'
+  | 'groups'
   | 'flights'
   | 'hotels'
   | 'bookings'
