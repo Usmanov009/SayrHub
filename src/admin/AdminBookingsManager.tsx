@@ -106,8 +106,8 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
 
   const isTourAdmin = currentRole === 'tour_admin';
   const totalRevenue = bookings.filter(b => b.status !== 'Bekor qilingan').reduce((sum, b) => sum + (Number(b.totalNumeric) || 0), 0);
-  const commission3Percent = Math.round(totalRevenue * 0.03);
-  const netEarnings = totalRevenue - commission3Percent;
+  const taxAmount = Math.round(totalRevenue * 0.02);
+  const netEarnings = totalRevenue - taxAmount;
 
   return (
     <div className="space-y-6">
@@ -119,7 +119,7 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
             {isTourAdmin
-              ? "O‘zingizning turlaringiz bo‘yicha tushgan bronlar, to‘lovlar va 3% komissiya hisob-kitobi"
+              ? "O‘zingizning turlaringiz bo‘yicha tushgan bronlar, to‘lovlar va 2% soliq hisob-kitobi"
               : "Platformadagi barcha bronlar, to‘lovlar va elektron vaucherlar nazorati"}
           </p>
         </div>
@@ -158,13 +158,13 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
           <div className="flex items-center gap-2.5">
             <span className="material-symbols-outlined text-[20px] text-indigo-600 dark:text-indigo-400">account_balance_wallet</span>
             <div>
-              <p className="font-bold text-zinc-900 dark:text-white">O‘z daromadingiz va 3% Bosh Adminga to‘lov</p>
-              <p className="text-zinc-500 dark:text-zinc-400">Daromatdan 3% Bosh Adminga to‘lanadi, 97% sizning sof foydangiz hisoblanadi.</p>
+              <p className="font-bold text-zinc-900 dark:text-white">O‘z daromadingiz va 2% Bosh Adminga to‘lov</p>
+              <p className="text-zinc-500 dark:text-zinc-400">Daromatdan 2% Bosh Adminga to‘lanadi, 98% sizning sof foydangiz hisoblanadi.</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 font-bold shrink-0">
             <span className="px-2.5 py-1 rounded-lg bg-card border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">Jami: ${totalRevenue}</span>
-            <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900">-3% To‘lov: ${commission3Percent}</span>
+            <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900">-2% To‘lov: ${taxAmount}</span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">= Sof: ${netEarnings}</span>
           </div>
         </div>
@@ -179,7 +179,7 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
           </div>
           <div className="flex flex-wrap items-center gap-2 font-bold shrink-0">
             <span className="px-2.5 py-1 rounded-lg bg-card border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">Umumiy: ${totalRevenue}</span>
-            <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900">3% komissiya: ${commission3Percent}</span>
+            <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900">2% soliq: ${taxAmount}</span>
           </div>
         </div>
       )}
@@ -341,8 +341,8 @@ export const AdminBookingsManager: React.FC<AdminBookingsManagerProps> = ({
                         <span className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">{b.price}</span>
                         {isTourAdmin && b.totalNumeric ? (
                           <div className="flex flex-col text-[10px] text-muted-foreground mt-0.5">
-                            <span className="text-rose-600 dark:text-rose-400 font-medium">3% to‘lov: ${Math.round(b.totalNumeric * 0.03)}</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sof: ${b.totalNumeric - Math.round(b.totalNumeric * 0.03)}</span>
+                            <span className="text-rose-600 dark:text-rose-400 font-medium">2% soliq: ${Math.round(b.totalNumeric * 0.02)}</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sof: ${b.totalNumeric - Math.round(b.totalNumeric * 0.02)}</span>
                           </div>
                         ) : null}
                       </td>

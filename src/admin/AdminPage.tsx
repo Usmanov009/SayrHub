@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { TourPackage, Booking, PriceAlert, ComboTour, FlightTicket, HotelOnly, GroupTour } from '../types';
-import { AdminRole, AdminTab, AdminUser, isBookingForAdmin } from './adminTypes';
+import { AdminRole, AdminTab, AdminUser } from './adminTypes';
 import { AppSidebar } from './dashboard/app-sidebar';
 import { SiteHeader } from './dashboard/site-header';
 import { SectionCards } from './dashboard/section-cards';
@@ -152,7 +152,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
   // Guard: If non-main-admin tries to view closed sections, redirect to dashboard
   useEffect(() => {
-    if (currentRole !== 'main_admin' && (currentTab === 'staff' || currentTab === 'users')) {
+    if (currentRole !== 'main_admin' && (currentTab === 'staff' || currentTab === 'users' || currentTab === 'settings')) {
       setCurrentTab('dashboard');
     }
   }, [currentRole, currentTab]);
@@ -216,10 +216,75 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   }
 
   const isMainAdmin = currentRole === 'main_admin';
+
+  // Har bir tur kompaniyasi (tur admin) faqat o'z ma'lumotlarini ko'radi.
+  const belongsToAdmin = React.useCallback((owner: {
+    adminId?: string;
+    adminUsername?: string;
+    adminName?: string;
+  }) => {
+    if (!currentAdmin) return false;
+    if (owner.adminId) return owner.adminId === currentAdmin.id;
+    if (owner.adminUsername && currentAdmin.username) {
+      return owner.adminUsername.toLowerCase() === currentAdmin.username.toLowerCase();
+    }
+    if (owner.adminName) return owner.adminName === currentAdmin.name;
+    return false;
+  }, [currentAdmin]);
+
+  const visibleTours = React.useMemo(() => {
+    if (isMainAdmin) return tours;
+    return tours.filter((tour) => belongsToAdmin(tour));
+  }, [isMainAdmin, tours, belongsToAdmin]);
+
+  const ownsCatalogItem = React.useCallback((item: any) => {
+    if (isMainAdmin || !currentAdmin) return true;
+    if (item?.adminId || item?.adminUsername || item?.adminName) return belongsToAdmin(item);
+    if (item?.agencyName) return String(item.agencyName).toLowerCase() === (currentAdmin.name || '').toLowerCase();
+    return true;
+  }, [isMainAdmin, currentAdmin, belongsToAdmin]);
+
+  const visibleComboTours = React.useMemo(
+    () => (isMainAdmin ? comboTours : comboTours.filter(ownsCatalogItem)),
+    [isMainAdmin, comboTours, ownsCatalogItem],
+  );
+  const visibleFlights = React.useMemo(
+    () => (isMainAdmin ? flights : flights.filter(ownsCatalogItem)),
+    [isMainAdmin, flights, ownsCatalogItem],
+  );
+  const visibleHotels = React.useMemo(
+    () => (isMainAdmin ? hotels : hotels.filter(ownsCatalogItem)),
+    [isMainAdmin, hotels, ownsCatalogItem],
+  );
+  const visibleGroupTours = React.useMemo(
+    () => (isMainAdmin ? groupTours : groupTours.filter(ownsCatalogItem)),
+    [isMainAdmin, groupTours, ownsCatalogItem],
+  );
+
+  const visiblePriceAlerts = React.useMemo(() => {
+    if (isMainAdmin) return priceAlerts;
+    const ownedTourIds = new Set(visibleTours.map((t) => t.id));
+    return priceAlerts.filter((alert) => ownedTourIds.has(alert.tourId));
+  }, [isMainAdmin, priceAlerts, visibleTours]);
+
+  const bookingBelongsToAdmin = React.useCallback((booking: Booking) => {
+    if (!currentAdmin) return false;
+    if (booking.adminId) return booking.adminId === currentAdmin.id;
+    if (booking.adminUsername && currentAdmin.username) {
+      return booking.adminUsername.toLowerCase() === currentAdmin.username.toLowerCase();
+    }
+    if (booking.adminName) return booking.adminName === currentAdmin.name;
+    const tour = visibleTours.find(
+      (t) => t.id === booking.tourId ||
+        (t.title && booking.tourTitle && t.title.trim().toLowerCase() === booking.tourTitle.trim().toLowerCase()),
+    );
+    return tour ? belongsToAdmin(tour) : false;
+  }, [currentAdmin, visibleTours, belongsToAdmin]);
+
   const effectiveBookings = React.useMemo(() => {
     if (isMainAdmin) return bookings;
-    return bookings.filter(b => isBookingForAdmin(b, currentAdmin, tours));
-  }, [isMainAdmin, bookings, currentAdmin, tours]);
+    return bookings.filter(bookingBelongsToAdmin);
+  }, [isMainAdmin, bookings, bookingBelongsToAdmin]);
 
   const tableRows = toTableRows(effectiveBookings);
   const showHeaderActions = currentTab !== 'dashboard';
@@ -329,10 +394,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               {currentTab === 'dashboard' ? (
                 <>
                   <SectionCards
-                    bookings={bookings}
+                    bookings={effectiveBookings}
                     usersCount={usersCount}
                     currentAdmin={currentAdmin}
-                    tours={tours}
+                    tours={visibleTours}
                     staffList={staffList}
                   />
                   <div className="px-4 lg:px-6">
@@ -354,7 +419,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <AdminToursManager
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}
-                      tours={tours}
+                      tours={visibleTours}
                       onAddTour={onAddTour}
                       onUpdateTour={onUpdateTour}
                       onDeleteTour={onDeleteTour}
@@ -369,7 +434,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <AdminComboManager
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}
-                      comboTours={comboTours}
+                      comboTours={visibleComboTours}
                       onAddComboTour={onAddComboTour}
                       onUpdateComboTour={onUpdateComboTour}
                       onDeleteComboTour={onDeleteComboTour}
@@ -382,7 +447,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <AdminGroupToursManager
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}
-                      groupTours={groupTours}
+                      groupTours={visibleGroupTours}
                       onAddGroupTour={onAddGroupTour}
                       onUpdateGroupTour={onUpdateGroupTour}
                       onDeleteGroupTour={onDeleteGroupTour}
@@ -395,7 +460,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <AdminFlightsManager
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}
-                      flights={flights}
+                      flights={visibleFlights}
                       onAddFlight={onAddFlight}
                       onUpdateFlight={onUpdateFlight}
                       onDeleteFlight={onDeleteFlight}
@@ -410,7 +475,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <AdminHotelsManager
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}
-                      hotels={hotels}
+                      hotels={visibleHotels}
                       onAddHotel={onAddHotel}
                       onUpdateHotel={onUpdateHotel}
                       onDeleteHotel={onDeleteHotel}
@@ -462,15 +527,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <AdminPriceAlertsManager
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}
-                      priceAlerts={priceAlerts}
-                      tours={tours}
+                      priceAlerts={visiblePriceAlerts}
+                      tours={visibleTours}
                       onDeletePriceAlert={onDeletePriceAlert}
                       onShowToast={onShowToast}
                       globalSearch={searchTerm}
                     />
                   )}
 
-                  {currentTab === 'settings' && (
+                  {currentTab === 'settings' && currentRole === 'main_admin' && (
                     <AdminSettings
                       currentRole={currentRole}
                       currentAdmin={currentAdmin}

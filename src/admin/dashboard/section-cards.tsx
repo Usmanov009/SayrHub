@@ -71,7 +71,7 @@ export function SectionCards({
     (booking) => booking.type === "active"
   ).length
 
-  // Calculate 3% commission from tour admin sales
+  // Calculate 2% commission from tour admin sales
   const tourAdminBookings = paidBookings.filter((b) => {
     if (b.adminId && b.adminId !== "adm-root") return true
     const tour = tours.find(
@@ -91,7 +91,7 @@ export function SectionCards({
           0
         )
       : totalPlatformRevenue
-  const totalTourAdminsCommission = Math.round(tourAdminsRevenue * 0.03)
+  const totalTourAdminsCommission = Math.round(tourAdminsRevenue * 0.02)
 
   // Growth calculation
   const now = new Date()
@@ -146,12 +146,12 @@ export function SectionCards({
                   variant="outline"
                   className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800 text-[10px]"
                 >
-                  3% Komissiya Sharti
+                  2% Komissiya Sharti
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                O‘z turlaringiz bo‘yicha jami tushumdan 3% Bosh Adminga
-                to‘lanadi. 97% sof daromad sizning hisobingizda qoladi.
+                O‘z turlaringiz bo‘yicha jami tushumdan 2% Bosh Adminga
+                to‘lanadi. 98% sof daromad sizning hisobingizda qoladi.
               </p>
             </div>
           </div>
@@ -160,7 +160,7 @@ export function SectionCards({
               Jami tushum: <b>${money.format(myGrossRevenue)}</b>
             </span>
             <span className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900 shadow-2xs">
-              Bosh adminga 3%: <b>${money.format(commissionFee)}</b>
+              Bosh adminga 2%: <b>${money.format(commissionFee)}</b>
             </span>
             <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 shadow-2xs">
               Sof daromad: <b>${money.format(netRevenue)}</b>
@@ -187,7 +187,7 @@ export function SectionCards({
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Barcha tizim funksiyalari, mijozlar shaxsiy ma’lumotlari va Tur
-                Adminlardan tushadigan 3% komissiya tushumlari to‘liq sizga
+                Adminlardan tushadigan 2% komissiya tushumlari to‘liq sizga
                 tegishli.
               </p>
             </div>
@@ -197,7 +197,7 @@ export function SectionCards({
               Umumiy aylanma: <b>${money.format(totalPlatformRevenue)}</b>
             </span>
             <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900 shadow-2xs">
-              Tur adminlardan 3%: <b>${money.format(totalTourAdminsCommission)}</b>
+              Tur adminlardan 2%: <b>${money.format(totalTourAdminsCommission)}</b>
             </span>
           </div>
         </div>
@@ -233,10 +233,10 @@ export function SectionCards({
               </CardFooter>
             </Card>
 
-            {/* 2. Tour Admin: Bosh adminga 3% to'lov */}
+            {/* 2. Tour Admin: Bosh adminga 2% to'lov */}
             <Card className="@container/card">
               <CardHeader>
-                <CardDescription>Bosh adminga 3% to‘lov</CardDescription>
+                <CardDescription>Bosh adminga 2% to‘lov</CardDescription>
                 <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl text-rose-600 dark:text-rose-400">
                   ${money.format(commissionFee)}
                 </CardTitle>
@@ -245,24 +245,24 @@ export function SectionCards({
                     variant="outline"
                     className="bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800"
                   >
-                    3% Komissiya
+                    2% Komissiya
                   </Badge>
                 </CardAction>
               </CardHeader>
               <CardFooter className="flex-col items-start gap-1.5 text-sm">
                 <div className="line-clamp-1 flex gap-2 font-medium text-rose-600 dark:text-rose-400">
-                  Daromaddan 3% hisoblandi
+                  Daromaddan 2% hisoblandi
                 </div>
                 <div className="text-muted-foreground">
-                  SayrHub Bosh Adminiga to‘lanishi kerak bo‘lgan ulush
+                  Bosh Adminga to‘lanishi kerak bo‘lgan ulush
                 </div>
               </CardFooter>
             </Card>
 
-            {/* 3. Tour Admin: Sof daromad (97%) */}
+            {/* 3. Tour Admin: Sof daromad (98%) */}
             <Card className="@container/card">
               <CardHeader>
-                <CardDescription>Sof daromad (97%)</CardDescription>
+                <CardDescription>Sof daromad (98%)</CardDescription>
                 <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl text-emerald-600 dark:text-emerald-400">
                   ${money.format(netRevenue)}
                 </CardTitle>
@@ -271,13 +271,13 @@ export function SectionCards({
                     variant="outline"
                     className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
                   >
-                    97% Sizda qoladi
+                    98% Sizda qoladi
                   </Badge>
                 </CardAction>
               </CardHeader>
               <CardFooter className="flex-col items-start gap-1.5 text-sm">
                 <div className="line-clamp-1 flex gap-2 font-medium text-emerald-600 dark:text-emerald-400">
-                  3% to‘lovdan keyingi qoldiq
+                  2% to‘lovdan keyingi qoldiq
                 </div>
                 <div className="text-muted-foreground">
                   Tur admin hisobiga o‘tadigan sof foyda
@@ -337,10 +337,10 @@ export function SectionCards({
               </CardFooter>
             </Card>
 
-            {/* 2. Main Admin: Tur adminlardan 3% komissiya */}
+            {/* 2. Main Admin: Tur adminlardan 2% komissiya */}
             <Card className="@container/card">
               <CardHeader>
-                <CardDescription>Tur adminlardan 3% komissiya</CardDescription>
+                <CardDescription>Tur adminlardan 2% komissiya</CardDescription>
                 <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl text-indigo-600 dark:text-indigo-400">
                   ${money.format(totalTourAdminsCommission)}
                 </CardTitle>
@@ -349,7 +349,7 @@ export function SectionCards({
                     variant="outline"
                     className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800"
                   >
-                    3% sof komissiya
+                    2% sof komissiya
                   </Badge>
                 </CardAction>
               </CardHeader>
@@ -358,7 +358,7 @@ export function SectionCards({
                   Platforma sof daromadi
                 </div>
                 <div className="text-muted-foreground">
-                  Tur adminlar savdosidan Bosh Adminga to‘lanadigan 3%
+                  Tur adminlar savdosidan Bosh Adminga to‘lanadigan 2%
                 </div>
               </CardFooter>
             </Card>

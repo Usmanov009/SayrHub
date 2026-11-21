@@ -95,11 +95,15 @@ export function AppSidebar({
   ]
 
   const navSecondary = [
-    {
-      key: "settings",
-      title: "Sozlamalar",
-      icon: <IconPlaceholder lucide="Settings2Icon" />,
-    },
+    ...(currentAdmin.role === 'main_admin'
+      ? [
+          {
+            key: "settings",
+            title: "Sozlamalar",
+            icon: <IconPlaceholder lucide="Settings2Icon" />,
+          },
+        ]
+      : []),
     {
       key: "help",
       title: "Yordam",
