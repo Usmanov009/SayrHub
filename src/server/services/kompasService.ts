@@ -347,9 +347,6 @@ export async function queryKompasTour(params: Record<string, string>): Promise<a
 
       const coords = DEST_COORDS[resort] || DEST_COORDS[countryName];
       const commissionRate = getAgencyCommissionRate();
-      const customerOldPrice = oldPrice
-        ? Math.round(oldPrice * (1 + commissionRate / 100))
-        : undefined;
 
       const img = getDestinationImage(countryName, resort, i);
 
@@ -377,13 +374,13 @@ export async function queryKompasTour(params: Record<string, string>): Promise<a
         rating: 0,
         nights: nights !== undefined ? `${nights} kecha` : '',
         flight: tourTitle,
-        price: customerPrice,
-        oldPrice: customerOldPrice,
+        price: netCost,
+        oldPrice,
         originalCostPrice: netCost,
-        markupType: 'percent',
-        markupValue: commissionRate,
+        markupType: 'manual',
+        markupValue: 0,
         tourOperator: 'Kompas Tour',
-        agencyName: 'SayrHub',
+        agencyName: 'Tur kompaniyasi',
         operatorBadge: 'Kompas Tour Rasmiy',
         img,
         saved: false,

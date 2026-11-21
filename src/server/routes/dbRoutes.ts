@@ -56,7 +56,15 @@ router.get('/status', (_req, res) => {
 router.get('/tours', requireDatabase, async (_req, res) => {
   try {
     const tours = await TourModel.find().sort({ createdAt: -1 }).lean();
-    return res.json({ success: true, count: tours.length, tours });
+    // Foydalanuvchilarga Kompas Tour narxi aynan ko'rsatiladi (markup qo'llanilmaydi).
+    const normalized = tours.map((tour: any) => {
+      const cost = Number(tour.originalCostPrice);
+      if (Number.isFinite(cost) && cost > 0) {
+        return { ...tour, price: Math.round(cost), markupType: 'manual', markupValue: 0 };
+      }
+      return tour;
+    });
+    return res.json({ success: true, count: normalized.length, tours: normalized });
   } catch (error) {
     return sendDatabaseError(res, error);
   }
