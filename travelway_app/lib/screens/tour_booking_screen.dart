@@ -285,6 +285,9 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
       guestsCount: _totalGuests,
       adultsCount: _adultsCount,
       childrenCount: _childrenCount,
+      adminId: widget.tour.adminId,
+      adminName: widget.tour.adminName,
+      adminUsername: widget.tour.adminUsername,
     );
 
     final bookedToServer = await provider.createBooking(newBooking);

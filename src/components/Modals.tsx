@@ -555,7 +555,7 @@ export const Modals: React.FC<ModalsProps> = ({
                     Bosh Turoperator
                   </span>
                   <span className="font-extrabold text-sky-600 dark:text-sky-400 truncate block">
-                    {tourDetails.tourOperator || (tourDetails.isLiveKompas ? 'Kompas Tour' : '—')}
+                    {tourDetails.tourOperator || tourDetails.agencyName || tourDetails.adminName || '—'}
                   </span>
                 </div>
               </div>
@@ -1096,7 +1096,7 @@ export const Modals: React.FC<ModalsProps> = ({
                     <div className="flex justify-between items-center text-xs pt-1 border-t" style={{ borderColor: 'var(--tw-border)' }}>
                       <span className="inline-flex items-center gap-1" style={{ color: 'var(--tw-text-sub)' }}><Building2 className="w-3 h-3" /> Turoperator:</span>
                       <span className="font-bold text-sky-600 dark:text-sky-400">
-                        {checkoutTour.tourOperator || (checkoutTour.isLiveKompas ? 'Kompas Tour' : '—')}
+                        {checkoutTour.tourOperator || checkoutTour.agencyName || checkoutTour.adminName || '—'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">

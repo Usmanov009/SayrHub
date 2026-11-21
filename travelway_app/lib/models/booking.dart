@@ -22,6 +22,9 @@ class Booking {
   final int childrenCount;
   final String cancellationReason;
   final String travelerId;
+  final String adminId;
+  final String adminName;
+  final String adminUsername;
 
   Booking({
     required this.id,
@@ -47,6 +50,9 @@ class Booking {
     this.childrenCount = 0,
     this.cancellationReason = '',
     this.travelerId = 'guest',
+    this.adminId = '',
+    this.adminName = '',
+    this.adminUsername = '',
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -124,6 +130,9 @@ class Booking {
         json['travelerId'] ?? json['userId'],
         'guest',
       ),
+      adminId: asStr(json['adminId']),
+      adminName: asStr(json['adminName']),
+      adminUsername: asStr(json['adminUsername']),
     );
   }
 
@@ -175,6 +184,9 @@ class Booking {
       'children': childrenCount,
       'cancellationReason': cancellationReason,
       'cancelReason': cancellationReason,
+      'adminId': adminId,
+      'adminName': adminName,
+      'adminUsername': adminUsername,
     };
   }
 }

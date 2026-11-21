@@ -1,4 +1,53 @@
 import { getAgencyCommissionRate } from './agencySettings.js';
+import { AdminStaffModel } from '../../../db.js';
+
+export interface TourAdminLite {
+  id: string;
+  name: string;
+  username?: string;
+  assignedDestinations?: string[];
+}
+
+let cachedTourAdmins: TourAdminLite[] = [];
+let cachedTourAdminsAt = 0;
+
+async function getTourAdminsLite(): Promise<TourAdminLite[]> {
+  if (cachedTourAdmins.length > 0 && Date.now() - cachedTourAdminsAt < 60_000) {
+    return cachedTourAdmins;
+  }
+  try {
+    const staff = await AdminStaffModel.find({ role: 'tour_admin', status: 'active' }).lean();
+    cachedTourAdmins = (staff as any[]).map((s) => ({
+      id: String(s.id || ''),
+      name: String(s.name || s.username || 'Tur kompaniyasi'),
+      username: s.username ? String(s.username) : undefined,
+      assignedDestinations: Array.isArray(s.assignedDestinations) ? s.assignedDestinations.map(String) : [],
+    })).filter((a) => a.id);
+    cachedTourAdminsAt = Date.now();
+  } catch {
+    cachedTourAdmins = [];
+  }
+  return cachedTourAdmins;
+}
+
+function pickTourAdmin(
+  admins: TourAdminLite[],
+  country?: string,
+  city?: string,
+  seed = 0,
+): TourAdminLite | null {
+  if (!admins.length) return null;
+  const c = (country || '').toLowerCase().trim();
+  const ct = (city || '').toLowerCase().trim();
+  const match = admins.find((a) => (a.assignedDestinations || []).some((raw) => {
+    const d = String(raw).toLowerCase().trim();
+    if (!d) return false;
+    if (c && (d === c || c.includes(d) || d.includes(c))) return true;
+    if (ct && (d === ct || ct.includes(d) || d.includes(ct))) return true;
+    return false;
+  }));
+  return match || admins[Math.abs(seed) % admins.length];
+}
 
 // Destination and city mappings for online.uz.kompastour.com
 export const DEPARTURE_MAP: Record<string, string> = {
@@ -221,6 +270,8 @@ export async function queryKompasTour(params: Record<string, string>): Promise<a
     return cached.data;
   }
 
+  const admins = await getTourAdminsLite();
+
   // Format dates: fallback to dynamic upcoming dates (2 days to 21 days from now)
   const defaultBeg = new Date(Date.now() + 2 * 86400000);
   const defaultEnd = new Date(Date.now() + 21 * 86400000);
@@ -367,6 +418,8 @@ export async function queryKompasTour(params: Record<string, string>): Promise<a
         ? Math.round(oldPrice * (1 + commissionRate / 100))
         : undefined;
 
+      const admin = pickTourAdmin(admins, countryName, resort, i);
+
       parsedTours.push({
         id: `kompas-live-${params.stateInc}-${hotelId}-${i}`,
         title: hotelName,
@@ -382,9 +435,12 @@ export async function queryKompasTour(params: Record<string, string>): Promise<a
         originalCostPrice: netCost,
         markupType: 'percent',
         markupValue: commissionRate,
-        tourOperator: 'Kompas Tour',
-        agencyName: 'Kompas Tour',
-        operatorBadge: 'Kompas Tour Rasmiy',
+        tourOperator: admin?.name || 'Kompas Tour',
+        agencyName: admin?.name || 'Tur kompaniyasi',
+        operatorBadge: admin ? `${admin.name} Rasmiy` : 'Kompas Tour Rasmiy',
+        adminId: admin?.id,
+        adminName: admin?.name,
+        adminUsername: admin?.username,
         img,
         saved: false,
         category: '',
@@ -491,8 +547,10 @@ export async function fetchKompasFlights(params: {
   };
 
   const flightsList: any[] = [];
+  const admins = await getTourAdminsLite();
 
   defaultRoutes.forEach((route, idx) => {
+    const admin = pickTourAdmin(admins, route.destCity, undefined, idx);
     // Find if Kompas has a tour with date for this destination
     const matchingTour = allSampleTours.find(t =>
       t.location?.toLowerCase().includes(route.destCity.toLowerCase()) ||
@@ -532,8 +590,11 @@ export async function fetchKompasFlights(params: {
       isCharter: true,
       kompasFlightCode: `KOMPAS-CHARTER-${route.destCode}-${idx + 101}`,
       originalCostPrice: Math.round(estimatedPrice * 0.9),
-      tourOperator: 'Kompas Tour',
-      agencyName: 'Kompas Tour',
+      tourOperator: admin?.name || 'Kompas Tour',
+      agencyName: admin?.name || 'Tur kompaniyasi',
+      adminId: admin?.id,
+      adminName: admin?.name,
+      adminUsername: admin?.username,
     });
   });
 
@@ -562,10 +623,12 @@ export async function fetchKompasHotels(params: {
   }).catch(() => []);
 
   const hotelMap = new Map<string, any>();
+  const admins = await getTourAdminsLite();
 
   for (let i = 0; i < liveTours.length; i++) {
     const t = liveTours[i];
     if (!t.title || hotelMap.has(t.title)) continue;
+    const admin = pickTourAdmin(admins, t.country, t.resort, i);
 
     const nights = t.nightsCount || 7;
     // Hotel only price is estimated as roughly 60% of the flight+hotel package
@@ -610,8 +673,11 @@ export async function fetchKompasHotels(params: {
       kompasOnlineUrl: t.kompasOnlineUrl || '',
       saved: false,
       originalCostPrice: Math.round(totalPrice * 0.9),
-      tourOperator: 'Kompas Tour',
-      agencyName: 'Kompas Tour',
+      tourOperator: admin?.name || 'Kompas Tour',
+      agencyName: admin?.name || 'Tur kompaniyasi',
+      adminId: admin?.id,
+      adminName: admin?.name,
+      adminUsername: admin?.username,
     });
 
     if (hotelMap.size >= 40) break; // Limit to 40 distinct hotels
