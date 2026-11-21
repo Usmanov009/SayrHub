@@ -62,9 +62,9 @@ interface TourBookingPageProps {
 
 export const TourBookingPage: React.FC<TourBookingPageProps> = ({
   tour,
-  initialAdults = 2,
+  initialAdults = 1,
   initialChildren = 0,
-  initialTravelers = 2,
+  initialTravelers = 1,
   currentName = '',
   currentPhone = '',
   currentPassport = '',
@@ -74,7 +74,7 @@ export const TourBookingPage: React.FC<TourBookingPageProps> = ({
   onOpenPriceAlert
 }) => {
   // Steppers state
-  const [adultsCount, setAdultsCount] = useState<number>(initialAdults || 2);
+  const [adultsCount, setAdultsCount] = useState<number>(initialAdults || 1);
   const [childrenCount, setChildrenCount] = useState<number>(initialChildren || 0);
 
   // Form fields

@@ -271,7 +271,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
   const [selectedType, setSelectedType] = useState<string>('ALL'); // Tour Type / Category
   const [selectedResort, setSelectedResort] = useState<string>('Barcha kurortlar');
   const [nightsFilter, setNightsFilter] = useState<string>('ALL'); // 'ALL' | '5-6' | '7-8' | '9-11' | '12+'
-  const [adultsCount, setAdultsCount] = useState<number>(2);
+  const [adultsCount, setAdultsCount] = useState<number>(1);
   const [childrenCount, setChildrenCount] = useState<number>(0);
   const [selectedMeal, setSelectedMeal] = useState<string>('ALL');
   const [selectedStars, setSelectedStars] = useState<string>('ALL');
@@ -1572,8 +1572,12 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                     {/* Agency Trust Info */}
                     <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-semibold">
                       <Building2 className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">SayrHub</span>
-                      <span className="text-sky-400 dark:text-sky-500 ml-auto shrink-0 text-[10px]">✓ Rasmiy Operator</span>
+                      <span className="truncate">
+                        {tour.agencyName || tour.adminName || 'Tur kompaniyasi'}
+                      </span>
+                      <span className="ml-auto shrink-0 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                        +{tour.markupValue ?? 0}%
+                      </span>
                     </div>
                   </div>
                 </div>

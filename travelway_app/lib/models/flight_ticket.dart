@@ -44,7 +44,7 @@ class FlightTicket {
     this.markupType = 'percent',
     this.markupValue = 8,
     this.tourOperator = 'Kompas Tour Blok',
-    this.agencyName = 'SayrHub',
+    this.agencyName = 'Tur kompaniyasi',
   });
 
   factory FlightTicket.fromJson(Map<String, dynamic> json) {
@@ -70,7 +70,7 @@ class FlightTicket {
       markupType: json['markupType']?.toString() ?? 'percent',
       markupValue: (json['markupValue'] is num) ? (json['markupValue'] as num) : 8,
       tourOperator: json['tourOperator']?.toString() ?? 'Kompas Tour Blok',
-      agencyName: json['agencyName']?.toString() ?? 'SayrHub',
+      agencyName: json['agencyName']?.toString() ?? 'Tur kompaniyasi',
     );
   }
 }

@@ -363,6 +363,9 @@ export async function queryKompasTour(params: Record<string, string>): Promise<a
 
       const netCost = price;
       const customerPrice = Math.round(netCost * (1 + commissionRate / 100));
+      const customerOldPrice = oldPrice
+        ? Math.round(oldPrice * (1 + commissionRate / 100))
+        : undefined;
 
       parsedTours.push({
         id: `kompas-live-${params.stateInc}-${hotelId}-${i}`,
@@ -374,13 +377,13 @@ export async function queryKompasTour(params: Record<string, string>): Promise<a
         rating: 0,
         nights: nights !== undefined ? `${nights} kecha` : '',
         flight: tourTitle,
-        price: netCost,
-        oldPrice,
+        price: customerPrice,
+        oldPrice: customerOldPrice,
         originalCostPrice: netCost,
-        markupType: 'manual',
-        markupValue: 0,
+        markupType: 'percent',
+        markupValue: commissionRate,
         tourOperator: 'Kompas Tour',
-        agencyName: 'Tur kompaniyasi',
+        agencyName: 'Kompas Tour',
         operatorBadge: 'Kompas Tour Rasmiy',
         img,
         saved: false,
@@ -530,7 +533,7 @@ export async function fetchKompasFlights(params: {
       kompasFlightCode: `KOMPAS-CHARTER-${route.destCode}-${idx + 101}`,
       originalCostPrice: Math.round(estimatedPrice * 0.9),
       tourOperator: 'Kompas Tour',
-      agencyName: 'SayrHub',
+      agencyName: 'Kompas Tour',
     });
   });
 
@@ -608,7 +611,7 @@ export async function fetchKompasHotels(params: {
       saved: false,
       originalCostPrice: Math.round(totalPrice * 0.9),
       tourOperator: 'Kompas Tour',
-      agencyName: 'SayrHub',
+      agencyName: 'Kompas Tour',
     });
 
     if (hotelMap.size >= 40) break; // Limit to 40 distinct hotels

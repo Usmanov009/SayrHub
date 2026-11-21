@@ -34,7 +34,7 @@ class HotelOnly {
     this.markupType = 'percent',
     this.markupValue = 8,
     this.tourOperator = 'Kompas Tour',
-    this.agencyName = 'SayrHub',
+    this.agencyName = 'Tur kompaniyasi',
   });
 
   factory HotelOnly.fromJson(Map<String, dynamic> json) {
@@ -55,7 +55,7 @@ class HotelOnly {
       markupType: json['markupType']?.toString() ?? 'percent',
       markupValue: (json['markupValue'] is num) ? (json['markupValue'] as num) : 8,
       tourOperator: json['tourOperator']?.toString() ?? 'Kompas Tour',
-      agencyName: json['agencyName']?.toString() ?? 'SayrHub',
+      agencyName: json['agencyName']?.toString() ?? 'Tur kompaniyasi',
     );
   }
 }

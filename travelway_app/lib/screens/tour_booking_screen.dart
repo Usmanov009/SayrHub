@@ -19,7 +19,7 @@ class TourBookingScreen extends StatefulWidget {
   const TourBookingScreen({
     super.key,
     required this.tour,
-    this.initialAdults = 2,
+    this.initialAdults = 1,
     this.initialChildren = 0,
   });
 
