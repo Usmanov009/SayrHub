@@ -1577,9 +1577,6 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                           ? tour.agencyName
                           : (tour.adminName || 'Tur kompaniyasi')}
                       </span>
-                      <span className="ml-auto shrink-0 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
-                        +{tour.markupValue ?? 0}%
-                      </span>
                     </div>
                   </div>
                 </div>

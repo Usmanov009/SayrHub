@@ -20,7 +20,6 @@ import {
   User,
   AlertTriangle,
   Globe2,
-  BriefcaseBusiness,
   Building2,
   Hotel,
   Users,
@@ -584,17 +583,6 @@ export const Modals: React.FC<ModalsProps> = ({
                   ${tourDetails.originalCostPrice ?? tourDetails.price}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold">
-                <span className="flex items-center gap-1">
-                  <span className="inline-flex items-center gap-1"><BriefcaseBusiness className="w-3 h-3" /> Agentlik xizmati</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 border border-cyan-500/30">
-                    +{tourDetails.markupValue ?? 0}%
-                  </span>
-                </span>
-                <span className="font-mono font-bold">
-                  +${Math.max(0, tourDetails.price - (tourDetails.originalCostPrice ?? tourDetails.price))}
-                </span>
-              </div>
               <div className="pt-1.5 border-t flex items-center justify-between font-bold" style={{ borderColor: 'var(--tw-border)' }}>
                 <span className="text-[11px]" style={{ color: 'var(--tw-text-sub)' }}>Mijoz uchun to'liq narx:</span>
                 <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
@@ -1105,18 +1093,6 @@ export const Modals: React.FC<ModalsProps> = ({
                         {checkoutTour.agencyName && checkoutTour.agencyName.toLowerCase() !== 'tur kompaniyasi' ? checkoutTour.agencyName : (checkoutTour.adminName || 'Tur kompaniyasi')}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-xs text-cyan-600 dark:text-cyan-400">
-                      <span className="flex items-center gap-1">
-                        <span className="inline-flex items-center gap-1"><BriefcaseBusiness className="w-3 h-3" /> Agentlik xizmati:</span>
-                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-cyan-500/10 border border-cyan-500/30">
-                          +{checkoutTour.markupValue ?? 0}%
-                        </span>
-                      </span>
-                      <span className="font-bold">
-                        Narxga kiritilgan (+${Math.max(0, finalPackagePrice - Math.round(finalPackagePrice / (1 + (checkoutTour.markupValue ?? 0) / 100)))})
-                      </span>
-                    </div>
-
                     <div className="border-t pt-2 flex justify-between items-end" style={{ borderColor: 'var(--tw-border)' }}>
                       <div>
                         <span className="text-[10px] block" style={{ color: 'var(--tw-text-sub)' }}>Jami yakuniy narx:</span>

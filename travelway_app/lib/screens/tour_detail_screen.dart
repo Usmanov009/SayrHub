@@ -314,7 +314,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                               ),
                             ),
                             Text(
-                              '${tour.agencyName.isNotEmpty && tour.agencyName.toLowerCase() != 'tur kompaniyasi' ? tour.agencyName : (tour.adminName.isNotEmpty ? tour.adminName : 'Tur kompaniyasi')} (+${tour.markupValue.toStringAsFixed(tour.markupValue.truncateToDouble() == tour.markupValue ? 0 : 1)}%)',
+                              tour.agencyName.isNotEmpty && tour.agencyName.toLowerCase() != 'tur kompaniyasi'
+                                  ? tour.agencyName
+                                  : (tour.adminName.isNotEmpty ? tour.adminName : 'Tur kompaniyasi'),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 12,
@@ -355,56 +357,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                             Text(
                               '\$${tour.originalCostPrice ?? (tour.price / (1 + tour.markupValue / 100)).round()}',
                               style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  FlaticonIcons.workOutline,
-                                  size: 13,
-                                  color: AppTheme.primary,
-                                ),
-                                const SizedBox(width: 3),
-                                const Text(
-                                  'Agentlik xizmat komissiyasi ',
-                                  style: TextStyle(
-                                    color: AppTheme.primary,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primary.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '+${tour.markupValue.toStringAsFixed(tour.markupValue.truncateToDouble() == tour.markupValue ? 0 : 1)}%',
-                                    style: const TextStyle(
-                                      color: AppTheme.primary,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '+\$${tour.price - (tour.originalCostPrice ?? (tour.price / (1 + tour.markupValue / 100)).round())}',
-                              style: const TextStyle(
-                                color: AppTheme.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),

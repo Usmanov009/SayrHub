@@ -315,7 +315,9 @@ class _BookingDialogState extends State<BookingDialog> {
                                   ),
                                   const SizedBox(width: 3),
                                   Text(
-                                    '${widget.tour.agencyName.isNotEmpty && widget.tour.agencyName.toLowerCase() != 'tur kompaniyasi' ? widget.tour.agencyName : (widget.tour.adminName.isNotEmpty ? widget.tour.adminName : "Tur kompaniyasi")} (+${widget.tour.markupValue.toStringAsFixed(widget.tour.markupValue.truncateToDouble() == widget.tour.markupValue ? 0 : 1)}%)',
+                                    widget.tour.agencyName.isNotEmpty && widget.tour.agencyName.toLowerCase() != 'tur kompaniyasi'
+                                        ? widget.tour.agencyName
+                                        : (widget.tour.adminName.isNotEmpty ? widget.tour.adminName : "Tur kompaniyasi"),
                                     style: const TextStyle(
                                       color: AppTheme.accentGreen,
                                       fontSize: 10,
@@ -693,38 +695,6 @@ class _BookingDialogState extends State<BookingDialog> {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              FlaticonIcons.workOutline,
-                              size: 13,
-                              color: AppTheme.primary,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Agentlik xizmati (+${widget.tour.markupValue.toStringAsFixed(widget.tour.markupValue.truncateToDouble() == widget.tour.markupValue ? 0 : 1)}%):',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppTheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Text(
-                          'Narxga kiritilgan',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
                     const Divider(color: AppTheme.borderDark, height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

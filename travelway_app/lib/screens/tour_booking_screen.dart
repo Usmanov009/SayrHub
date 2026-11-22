@@ -1509,25 +1509,6 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
             ],
           ),
 
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Agentlik xizmati (+${widget.tour.markupValue.toStringAsFixed(widget.tour.markupValue.truncateToDouble() == widget.tour.markupValue ? 0 : 1)}%):',
-                style: const TextStyle(fontSize: 12, color: AppTheme.primary),
-              ),
-              const Text(
-                'Narxga kiritilgan',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primary,
-                ),
-              ),
-            ],
-          ),
-
           const Divider(height: 20, color: AppTheme.borderDark),
 
           Row(
