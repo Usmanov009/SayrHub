@@ -1573,7 +1573,9 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                     <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-semibold">
                       <Building2 className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">
-                        {tour.agencyName || tour.adminName || 'Tur kompaniyasi'}
+                        {tour.agencyName && tour.agencyName.toLowerCase() !== 'tur kompaniyasi'
+                          ? tour.agencyName
+                          : (tour.adminName || 'Tur kompaniyasi')}
                       </span>
                       <span className="ml-auto shrink-0 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
                         +{tour.markupValue ?? 0}%

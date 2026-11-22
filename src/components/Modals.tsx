@@ -565,7 +565,7 @@ export const Modals: React.FC<ModalsProps> = ({
                   Bronlash Agentligi
                 </span>
                 <span className="font-black text-emerald-600 dark:text-emerald-400">
-                  <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {tourDetails.agencyName || tourDetails.adminName || 'Tur kompaniyasi'}</span>
+                  <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> {tourDetails.agencyName && tourDetails.agencyName.toLowerCase() !== 'tur kompaniyasi' ? tourDetails.agencyName : (tourDetails.adminName || 'Tur kompaniyasi')}</span>
                 </span>
               </div>
             </div>
@@ -1102,7 +1102,7 @@ export const Modals: React.FC<ModalsProps> = ({
                     <div className="flex justify-between items-center text-xs">
                       <span className="inline-flex items-center gap-1" style={{ color: 'var(--tw-text-sub)' }}><ShieldCheck className="w-3 h-3" /> Bronlash Agentligi:</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {checkoutTour.agencyName || checkoutTour.adminName || 'Tur kompaniyasi'}
+                        {checkoutTour.agencyName && checkoutTour.agencyName.toLowerCase() !== 'tur kompaniyasi' ? checkoutTour.agencyName : (checkoutTour.adminName || 'Tur kompaniyasi')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs text-cyan-600 dark:text-cyan-400">

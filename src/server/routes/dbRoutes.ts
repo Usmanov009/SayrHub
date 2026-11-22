@@ -55,22 +55,57 @@ router.get('/status', (_req, res) => {
 
 router.get('/tours', requireDatabase, async (_req, res) => {
   try {
-    const tours = await TourModel.find().sort({ createdAt: -1 }).lean();
-    // Har bir tur firmasi o'rnatgan komissiya % narxga qo'shiladi.
-    const priced = tours.map((tour: any) => {
-      const cost = Number(tour.originalCostPrice);
-      if (Number.isFinite(cost) && cost > 0) {
-        const rate = Number(tour.markupValue);
-        const safeRate = Number.isFinite(rate) && rate > 0 ? rate : 0;
-        return {
-          ...tour,
-          price: Math.round(cost * (1 + safeRate / 100)),
-          oldPrice: tour.oldPrice ?? Math.round(cost * 1.15),
-          markupType: tour.markupType ?? 'percent',
-          markupValue: safeRate,
-        };
+    const [tours, staff] = await Promise.all([
+      TourModel.find().sort({ createdAt: -1 }).lean(),
+      AdminStaffModel.find({ role: 'tour_admin', status: 'active' }).lean(),
+    ]);
+
+    const admins = (staff as any[]).map((s) => ({
+      id: String(s.id || ''),
+      name: String(s.name || s.username || 'Tur kompaniyasi'),
+      username: s.username ? String(s.username) : undefined,
+      assignedDestinations: Array.isArray(s.assignedDestinations) ? s.assignedDestinations.map(String) : [],
+    })).filter((a) => a.id);
+
+    const pickAdmin = (tour: any, idx: number) => {
+      if (!admins.length) return null;
+      if (tour.adminId) {
+        const byId = admins.find((a) => a.id === String(tour.adminId));
+        if (byId) return byId;
       }
-      return tour;
+      if (tour.adminName) {
+        const byName = admins.find((a) => a.name.toLowerCase() === String(tour.adminName).toLowerCase());
+        if (byName) return byName;
+      }
+      if (tour.agencyName) {
+        const byAgency = admins.find((a) => a.name.toLowerCase() === String(tour.agencyName).toLowerCase());
+        if (byAgency) return byAgency;
+      }
+      const loc = String(tour.country || tour.location || '').toLowerCase();
+      const byDest = admins.find((a) => a.assignedDestinations.some((d: string) => d && loc.includes(d.toLowerCase())));
+      if (byDest) return byDest;
+      return admins[idx % admins.length];
+    };
+
+    // Har bir tur firmasi o'rnatgan komissiya % narxga qo'shiladi va tur kompaniyasi biriktiriladi.
+    const priced = tours.map((tour: any, idx: number) => {
+      const admin = pickAdmin(tour, idx);
+      const cost = Number(tour.originalCostPrice);
+      const rate = Number(tour.markupValue);
+      const safeRate = Number.isFinite(rate) && rate > 0 ? rate : 0;
+      const price = Number.isFinite(cost) && cost > 0 ? Math.round(cost * (1 + safeRate / 100)) : tour.price;
+      return {
+        ...tour,
+        price,
+        oldPrice: tour.oldPrice ?? (Number.isFinite(cost) && cost > 0 ? Math.round(cost * 1.15) : tour.oldPrice),
+        markupType: tour.markupType ?? 'percent',
+        markupValue: safeRate,
+        adminId: admin?.id || tour.adminId,
+        adminName: admin?.name || tour.adminName,
+        adminUsername: admin?.username || tour.adminUsername,
+        agencyName: admin?.name || tour.agencyName,
+        tourOperator: admin?.name || tour.tourOperator,
+      };
     });
     return res.json({ success: true, count: priced.length, tours: priced });
   } catch (error) {
